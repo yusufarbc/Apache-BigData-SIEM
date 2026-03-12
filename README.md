@@ -1,6 +1,11 @@
 # Apache-BigData-SIEM 🛡️🏛️
 
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
+
 **Apache-BigData-SIEM** is a high-performance, scalable security analytics platform designed to overcome the volume and cost limitations of traditional SIEM solutions. By leveraging a **Data Lakehouse** architecture, it provides both real-time stream processing and deep historical forensic capabilities.
+
+Please check our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) if you wish to help improve this project!
 
 ## 🚀 Architectural Overview
 The project implements a modern Lakehouse pattern to ensure data is processed instantly and stored in an optimized format for long-term security analysis.
@@ -25,10 +30,13 @@ The project implements a modern Lakehouse pattern to ensure data is processed in
 
 ## 📂 Quick Start
 
+We provide a simple `Makefile` wrapper for all Docker and Spark commands. If you do not have `make` installed, you can look at the `Makefile` and run the raw `docker compose` and `docker exec` commands.
+
 ### 1) Start the Platform
 
 ```bash
-docker compose up -d --build
+make up
+# or: docker compose up -d
 ```
 
 This will deploy:
@@ -42,10 +50,8 @@ This will deploy:
 ### 2) Run the ETL Job
 
 ```bash
-docker exec -it spark-master spark-submit \
-	--master spark://spark-master:7077 \
-	--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 \
-	/opt/bitnami/spark/jobs/etl_process.py
+make run-job
+# or: docker exec -it spark-master spark-submit ...
 ```
 
 ### 3) Validate Distributed Health

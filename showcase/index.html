@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -98,6 +98,7 @@
       line-height: 1.1;
       background: linear-gradient(135deg, #0c4a6e 0%, #0284c7 100%);
       -webkit-background-clip: text;
+      background-clip: text;
       -webkit-text-fill-color: transparent;
       letter-spacing: -1px;
     }
@@ -357,7 +358,7 @@
   </style>
 </head>
 <body>
-  <div class="progress" id="progress">Slide 1 / 14</div>
+  <div class="progress" id="progress">Slide 1 / 15</div>
 
   <div class="page" id="slides">
     <header class="hero">
@@ -496,60 +497,86 @@
       <h3>6) Proje Akış Mimarisi</h3>
       <p class="presentation-title">Uçtan uca veri yolculuğu (Data Pipeline)</p>
       
-      <svg class="svg-diagram" viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
-          </marker>
-        </defs>
+      <div style="text-align: center; margin-top: 1rem; height: 100%; display: flex; justify-content: center; align-items: center;">
+        <div class="mermaid" style="background: white; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.05); padding: 10px; width: 80%; max-width: 900px;">
+        flowchart TB
+            %% Styling
+            classDef node fill:#f8fafc,stroke:#94a3b8,stroke-width:2px,color:#0f172a,font-weight:bold,font-size:18px
+            classDef producer fill:#f1f5f9,stroke:#cbd5e1,stroke-width:2px,color:#0f172a,font-weight:bold,font-size:16px
+            classDef buffer fill:#fff7ed,stroke:#fb923c,stroke-width:3px,color:#c2410c,font-weight:bold,font-size:18px
+            classDef etl fill:#fef2f2,stroke:#ef4444,stroke-width:3px,color:#b91c1c,font-weight:bold,font-size:18px
+            classDef storage fill:#f0fdf4,stroke:#4ade80,stroke-width:3px,color:#15803d,font-weight:bold,font-size:18px
+            classDef catalog fill:#fefce8,stroke:#facc15,stroke-width:3px,color:#854d0e,font-weight:bold,font-size:18px
+            
+            subgraph DataGeneration ["1. Log Üretimi (Producers)"]
+                direction LR
+                P1("flog-web"):::producer
+                P2("flog-syslog"):::producer
+                P3("flog-app"):::producer
+            end
 
-        <!-- Generate Layer -->
-        <rect x="50" y="100" width="150" height="200" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2"/>
-        <text x="125" y="130" font-family="sans-serif" font-size="16" font-weight="bold" fill="#334155" text-anchor="middle">Producer</text>
-        <rect x="70" y="150" width="110" height="30" rx="5" fill="#ffffff" stroke="#94a3b8"/>
-        <text x="125" y="170" font-family="sans-serif" font-size="12" fill="#475569" text-anchor="middle">flog-web</text>
-        <rect x="70" y="195" width="110" height="30" rx="5" fill="#ffffff" stroke="#94a3b8"/>
-        <text x="125" y="215" font-family="sans-serif" font-size="12" fill="#475569" text-anchor="middle">flog-syslog</text>
-        <rect x="70" y="240" width="110" height="30" rx="5" fill="#ffffff" stroke="#94a3b8"/>
-        <text x="125" y="260" font-family="sans-serif" font-size="12" fill="#475569" text-anchor="middle">flog-app</text>
+            K1("2. Apache Kafka<br/>(Event Streaming & Buffer)"):::buffer
 
-        <!-- Message Bus -->
-        <rect x="300" y="100" width="150" height="200" rx="10" fill="#fff7ed" stroke="#fdba74" stroke-width="2"/>
-        <text x="375" y="130" font-family="sans-serif" font-size="16" font-weight="bold" fill="#c2410c" text-anchor="middle">Kafka (Buffer)</text>
-        <circle cx="345" cy="180" r="20" fill="#ffedd5" stroke="#fb923c"/>
-        <circle cx="395" cy="180" r="20" fill="#ffedd5" stroke="#fb923c"/>
-        <circle cx="370" cy="230" r="20" fill="#ffedd5" stroke="#fb923c"/>
-        <text x="375" y="280" font-family="sans-serif" font-size="12" fill="#ea580c" text-anchor="middle">Topics / Partitions</text>
+            S1("3. Apache Spark<br/>(Gerçek Zamanlı ETL)"):::etl
 
-        <!-- Processing Layer -->
-        <rect x="550" y="100" width="150" height="200" rx="10" fill="#fef2f2" stroke="#fdba74" stroke-width="2"/>
-        <text x="625" y="130" font-family="sans-serif" font-size="16" font-weight="bold" fill="#b91c1c" text-anchor="middle">Spark ETL</text>
-        <path d="M600 160 L580 220 L610 210 L600 260 L650 190 L620 200 Z" fill="#ef4444" />
-        <text x="625" y="280" font-family="sans-serif" font-size="12" fill="#b91c1c" text-anchor="middle">Stream Processing</text>
+            subgraph StorageCatalog ["4. Lakehouse (Depolama & Sorgu)"]
+                direction LR
+                HDFS("HDFS (Parquet)"):::storage
+                HIVE("Apache Hive (SQL)"):::catalog
+            end
 
-        <!-- Storage & Catalog -->
-        <rect x="800" y="100" width="150" height="90" rx="10" fill="#fefce8" stroke="#fde047" stroke-width="2"/>
-        <text x="875" y="130" font-family="sans-serif" font-size="16" font-weight="bold" fill="#854d0e" text-anchor="middle">Hive Metastore</text>
-        <rect x="820" y="150" width="110" height="20" rx="3" fill="#ffffff" stroke="#facc15"/>
-        <text x="875" y="165" font-family="sans-serif" font-size="10" fill="#a16207" text-anchor="middle">PostgreSQL (Schema)</text>
-
-        <rect x="800" y="210" width="150" height="90" rx="10" fill="#fefce8" stroke="#fde047" stroke-width="2"/>
-        <text x="875" y="240" font-family="sans-serif" font-size="16" font-weight="bold" fill="#854d0e" text-anchor="middle">HDFS Files</text>
-        <rect x="820" y="260" width="110" height="20" rx="3" fill="#ffffff" stroke="#facc15"/>
-        <text x="875" y="274" font-family="sans-serif" font-size="10" fill="#a16207" text-anchor="middle">Parquet Format</text>
-
-        <!-- Arrows -->
-        <line x1="200" y1="200" x2="290" y2="200" stroke="#64748b" stroke-width="3" marker-end="url(#arrowhead)"/>
-        <line x1="450" y1="200" x2="540" y2="200" stroke="#64748b" stroke-width="3" marker-end="url(#arrowhead)"/>
-        
-        <path d="M 700 200 L 750 200 L 750 145 L 790 145" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrowhead)"/>
-        <path d="M 700 200 L 750 200 L 750 255 L 790 255" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrowhead)"/>
-
-      </svg>
+            %% Flow (Ters C şekli yaratmak için)
+            P1 --> K1
+            P2 --> K1
+            P3 --> K1
+            
+            K1 ==>|"Consume"| S1
+            
+            S1 ==>|"Append (Parquet)"| HDFS
+            S1 -.->|"Update Metadata"| HIVE
+            
+            HDFS <==>|"JDBC / SQL Interface"| HIVE
+        </div>
+      </div>
     </section>
 
     <section class="card">
-      <h3>7) Servis Dağılımı ve Rol Tablosu</h3>
+      <h3>7) Mikroservis & Konteyner Mimarisi</h3>
+      <div class="tech-grid">
+        <div class="tech-desc">
+          <p>Big Data platformumuz devasa bir <strong>monolit yapı değildir.</strong> Her bir Apache bileşeni birbirinden tamamen izole edilmiş, kendi yaşam döngüsü olan Docker konteynerleri (Mikroservisler) olarak çalışır.</p>
+          <p>Bu bize şu avantajları sağlar:</p>
+          <ul class="presentation-list" style="padding-left:0;">
+            <li><strong>Bağımsız Ölçeklendirme:</strong> Log hacmi artarsa sadece Kafka Broker sayısını (`docker compose scale`) artırabiliriz. Spark veya Hive'ı etkilemez.</li>
+            <li><strong>İzolasyon:</strong> Spark işçisi (worker) %100 CPU tavanına vursa bile Hadoop HDFS'in okuma/yazma performansı etkilenmez.</li>
+            <li><strong>Kolay Dağıtım (Deployment):</strong> `docker-compose.yml` dosyamız altyapının kod (Infrastructure as Code) halidir. Saniyeler içinde tüm cluster ayağa kalkar.</li>
+            <li><strong>Tam Uyum:</strong> Yazılımcının bilgisayarındaki ortam ile gerçek üretim (Production) ortamı birebir aynıdır.</li>
+          </ul>
+        </div>
+        <div style="text-align: center;">
+           <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+             <rect x="20" y="20" width="70" height="70" rx="5" fill="#f0f9ff" stroke="#0284c7" stroke-width="4"/>
+             <rect x="110" y="20" width="70" height="70" rx="5" fill="#f0f9ff" stroke="#0284c7" stroke-width="4"/>
+             <rect x="20" y="110" width="70" height="70" rx="5" fill="#f0f9ff" stroke="#0284c7" stroke-width="4"/>
+             <rect x="110" y="110" width="70" height="70" rx="5" fill="#f0f9ff" stroke="#0284c7" stroke-width="4"/>
+             <!-- Connectors -->
+             <path d="M 90 55 L 110 55" stroke="#94a3b8" stroke-width="3" stroke-dasharray="4,4"/>
+             <path d="M 55 90 L 55 110" stroke="#94a3b8" stroke-width="3" stroke-dasharray="4,4"/>
+             <path d="M 145 90 L 145 110" stroke="#94a3b8" stroke-width="3" stroke-dasharray="4,4"/>
+             <path d="M 90 145 L 110 145" stroke="#94a3b8" stroke-width="3" stroke-dasharray="4,4"/>
+             
+             <!-- Icons inside boxes -->
+             <text x="55" y="62" font-family="sans-serif" font-size="24" font-weight="bold" fill="#0369a1" text-anchor="middle">🐳</text>
+             <text x="145" y="62" font-family="sans-serif" font-size="24" font-weight="bold" fill="#0369a1" text-anchor="middle">🐳</text>
+             <text x="55" y="152" font-family="sans-serif" font-size="24" font-weight="bold" fill="#0369a1" text-anchor="middle">🐳</text>
+             <text x="145" y="152" font-family="sans-serif" font-size="24" font-weight="bold" fill="#0369a1" text-anchor="middle">🐳</text>
+           </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>8) Servis Dağılımı ve Rol Tablosu</h3>
       <table class="compare-table">
         <thead>
           <tr>
@@ -594,7 +621,7 @@
     </section>
 
     <section class="card">
-      <h3>8) ETL Mantığı (PySpark)</h3>
+      <h3>9) ETL Mantığı (PySpark)</h3>
       <ul class="presentation-list">
         <li><strong>Kaynak:</strong> Kafka topic aboneliği: web-logs, syslogs, app-logs.</li>
         <li><strong>İşleme:</strong> Regex ile IP, method, path, status; JSON parse ile event/service alanları.</li>
@@ -616,7 +643,7 @@
     </section>
 
     <section class="card">
-      <h3>9) Dağıtık Durum Doğrulama (CLI)</h3>
+      <h3>10) Dağıtık Durum Doğrulama (CLI)</h3>
       <ul class="presentation-list">
         <li><strong>HDFS:</strong> <em>hdfs dfsadmin -report</em> çıktısında Live datanodes (2) görünmeli.</li>
         <li><strong>Kafka:</strong> Topic listesinde web-logs, syslogs, app-logs görünmeli.</li>
@@ -634,7 +661,7 @@ docker exec -it hive-server2 /opt/hive/bin/beeline -u jdbc:hive2://localhost:100
     </section>
 
     <section class="card">
-      <h3>10) Neden Bu Mimari?</h3>
+      <h3>11) Neden Bu Mimari?</h3>
       <ul class="presentation-list">
         <li><strong>Vendor lock-in yok:</strong> Tamamen Apache ekosistemi, markaya veya pahalı lisanslara bağımlılık yok.</li>
         <li><strong>Yatay ölçeklenebilirlik:</strong> Daha çok log geldikçe, sadece yeni Kafka Broker veya yeni Hadoop DataNode eklenir.</li>
@@ -644,7 +671,7 @@ docker exec -it hive-server2 /opt/hive/bin/beeline -u jdbc:hive2://localhost:100
     </section>
 
     <section class="card">
-      <h3>11) Sonraki Adımlar</h3>
+      <h3>12) Sonraki Adımlar</h3>
       <ul class="presentation-list">
         <li>Kafka cluster'ını 3 broker ve topic replication (çoğaltma) ile yüksek erişilebilir hale getirmek.</li>
         <li>Spark işine <em>watermark</em> ve pencereleme fonksiyonları ekleyerek kural tabanlı saldırı tespiti yazdırmak.</li>
@@ -718,5 +745,9 @@ docker exec -it hive-server2 /opt/hive/bin/beeline -u jdbc:hive2://localhost:100
     page.addEventListener('scroll', updateProgress, { passive: true });
     updateProgress();
   </script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+      mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
 </body>
 </html>
