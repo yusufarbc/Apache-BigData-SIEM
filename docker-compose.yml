@@ -1,5 +1,49 @@
 name: apache-bigdata-siem
 
+# ══════════════════════════════════════════════════════════════
+# YAML Extension Fields (DRY — Don't Repeat Yourself)
+# ══════════════════════════════════════════════════════════════
+
+x-hadoop-volumes: &hadoop-volumes
+  - ./config/hadoop/core-site.xml:/etc/hadoop/core-site.xml:ro
+  - ./config/hadoop/hdfs-site.xml:/etc/hadoop/hdfs-site.xml:ro
+
+x-spark-common: &spark-common
+  image: bitnamilegacy/spark:3.5.6-debian-12-r1
+  restart: unless-stopped
+  networks:
+    - siem-network
+  volumes: &spark-volumes
+    - ./config/spark/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf:ro
+    - ./config/hadoop/core-site.xml:/opt/bitnami/spark/conf/core-site.xml:ro
+    - ./config/hadoop/hdfs-site.xml:/opt/bitnami/spark/conf/hdfs-site.xml:ro
+    - ./config/hive/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml:ro
+
+x-spark-worker-env: &spark-worker-env
+  SPARK_MODE: worker
+  SPARK_MASTER_URL: spark://spark-master:7077
+  SPARK_WORKER_MEMORY: 2G
+  SPARK_WORKER_CORES: "2"
+  SPARK_NO_DAEMONIZE: "yes"
+  SPARK_CONF_DIR: /opt/bitnami/spark/conf
+
+x-flog-common: &flog-common
+  build:
+    context: ./flog
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  networks:
+    - siem-network
+
+x-flog-env: &flog-env
+  KAFKA_BOOTSTRAP_SERVERS: kafka-broker:9092
+  BATCH_SIZE: "2000"
+  LOOP_DELAY: "1"
+
+# ══════════════════════════════════════════════════════════════
+# Networks & Volumes
+# ══════════════════════════════════════════════════════════════
+
 networks:
   siem-network:
     driver: bridge
@@ -12,12 +56,20 @@ volumes:
   postgres-data:
   kafka-data:
   hive-warehouse:
-  superset_postgres_data:
   superset_data:
   zeppelin_data:
   zeppelin_notebooks:
 
+# ══════════════════════════════════════════════════════════════
+# Services
+# ══════════════════════════════════════════════════════════════
+
 services:
+
+  # ─────────────────────────────────────────────────────────
+  # HDFS — Distributed Storage
+  # ─────────────────────────────────────────────────────────
+
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
@@ -35,6 +87,15 @@ services:
       - namenode-data:/hadoop/dfs/name
       - ./config/hadoop/core-site.xml:/etc/hadoop/core-site.xml:ro
       - ./config/hadoop/hdfs-site.xml:/etc/hadoop/hdfs-site.xml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9870/dfshealth.html || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     networks:
       - siem-network
 
@@ -47,13 +108,16 @@ services:
       SERVICE_PRECONDITION: namenode:9870 namenode:8020
       HDFS_CONF_dfs_datanode_use_datanode_hostname: "true"
     depends_on:
-      - namenode
-    ports:
-      - "9864:9864"
+      namenode:
+        condition: service_healthy
     volumes:
       - datanode-1-data:/hadoop/dfs/data
       - ./config/hadoop/core-site.xml:/etc/hadoop/core-site.xml:ro
       - ./config/hadoop/hdfs-site.xml:/etc/hadoop/hdfs-site.xml:ro
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     networks:
       - siem-network
 
@@ -66,35 +130,49 @@ services:
       SERVICE_PRECONDITION: namenode:9870 namenode:8020
       HDFS_CONF_dfs_datanode_use_datanode_hostname: "true"
     depends_on:
-      - namenode
-    ports:
-      - "9865:9864"
+      namenode:
+        condition: service_healthy
     volumes:
       - datanode-2-data:/hadoop/dfs/data
       - ./config/hadoop/core-site.xml:/etc/hadoop/core-site.xml:ro
       - ./config/hadoop/hdfs-site.xml:/etc/hadoop/hdfs-site.xml:ro
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     networks:
       - siem-network
 
+  # ─────────────────────────────────────────────────────────
+  # PostgreSQL — Unified Database (Hive Metastore + Superset)
+  # ─────────────────────────────────────────────────────────
+
   postgres:
     image: postgres:15-alpine
-    container_name: hive-metastore-db
+    container_name: siem-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: metastore
       POSTGRES_USER: hive
       POSTGRES_PASSWORD: hivepass
-    ports:
-      - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./config/postgres/init-superset-db.sh:/docker-entrypoint-initdb.d/init-superset-db.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U hive -d metastore"]
       interval: 10s
       timeout: 5s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     networks:
       - siem-network
+
+  # ─────────────────────────────────────────────────────────
+  # Hive — Data Catalog
+  # ─────────────────────────────────────────────────────────
 
   hive-metastore:
     image: apache/hive:4.0.0
@@ -113,7 +191,7 @@ services:
       postgres:
         condition: service_healthy
       namenode:
-        condition: service_started
+        condition: service_healthy
       datanode-1:
         condition: service_started
       datanode-2:
@@ -126,6 +204,10 @@ services:
       - ./config/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
       - ./config/hadoop/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
       - ./config/hive/postgresql-42.7.3.jar:/opt/hive/lib/postgresql-42.7.3.jar:ro
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
     networks:
       - siem-network
 
@@ -156,8 +238,16 @@ services:
       - ./config/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
       - ./config/hadoop/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
       - ./config/hive/postgresql-42.7.3.jar:/opt/hive/lib/postgresql-42.7.3.jar:ro
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
     networks:
       - siem-network
+
+  # ─────────────────────────────────────────────────────────
+  # Kafka — Message Streaming
+  # ─────────────────────────────────────────────────────────
 
   kafka-broker:
     image: bitnamilegacy/kafka:3.7.1-debian-12-r9
@@ -176,10 +266,13 @@ services:
       KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
       KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
       KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_CFG_NUM_PARTITIONS: "3"
+      KAFKA_CFG_LOG_RETENTION_HOURS: "168"
+      KAFKA_CFG_LOG_SEGMENT_BYTES: "1073741824"
       ALLOW_PLAINTEXT_LISTENER: "yes"
     depends_on:
-      hive-server2:
-        condition: service_started
+      namenode:
+        condition: service_healthy
     ports:
       - "9092:9092"
     volumes:
@@ -189,13 +282,20 @@ services:
       interval: 15s
       timeout: 10s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     networks:
       - siem-network
 
+  # ─────────────────────────────────────────────────────────
+  # Spark — Processing Engine
+  # ─────────────────────────────────────────────────────────
+
   spark-master:
-    image: bitnamilegacy/spark:3.5.6-debian-12-r1
+    <<: *spark-common
     container_name: spark-master
-    restart: unless-stopped
     environment:
       SPARK_MODE: master
       SPARK_MASTER_HOST: spark-master
@@ -217,6 +317,8 @@ services:
     depends_on:
       kafka-broker:
         condition: service_healthy
+      hive-metastore:
+        condition: service_started
     ports:
       - "8080:8080"
       - "7077:7077"
@@ -227,137 +329,102 @@ services:
       - ./config/hadoop/hdfs-site.xml:/opt/bitnami/spark/conf/hdfs-site.xml:ro
       - ./config/hive/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml:ro
       - ./jobs:/opt/bitnami/spark/jobs
-    networks:
-      - siem-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 2G
 
   spark-worker-1:
-    image: bitnamilegacy/spark:3.5.6-debian-12-r1
+    <<: *spark-common
     container_name: spark-worker-1
-    restart: unless-stopped
     environment:
-      SPARK_MODE: worker
-      SPARK_MASTER_URL: spark://spark-master:7077
-      SPARK_WORKER_MEMORY: 2G
-      SPARK_WORKER_CORES: "2"
+      <<: *spark-worker-env
       SPARK_WORKER_WEBUI_PORT: "8081"
-      SPARK_NO_DAEMONIZE: "yes"
-      SPARK_CONF_DIR: /opt/bitnami/spark/conf
     depends_on:
       spark-master:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8081:8081"
-    volumes:
-      - ./config/spark/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf:ro
-      - ./config/hadoop/core-site.xml:/opt/bitnami/spark/conf/core-site.xml:ro
-      - ./config/hadoop/hdfs-site.xml:/opt/bitnami/spark/conf/hdfs-site.xml:ro
-      - ./config/hive/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml:ro
-    networks:
-      - siem-network
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+          cpus: "2.0"
 
   spark-worker-2:
-    image: bitnamilegacy/spark:3.5.6-debian-12-r1
+    <<: *spark-common
     container_name: spark-worker-2
-    restart: unless-stopped
     environment:
-      SPARK_MODE: worker
-      SPARK_MASTER_URL: spark://spark-master:7077
-      SPARK_WORKER_MEMORY: 2G
-      SPARK_WORKER_CORES: "2"
+      <<: *spark-worker-env
       SPARK_WORKER_WEBUI_PORT: "8081"
-      SPARK_NO_DAEMONIZE: "yes"
-      SPARK_CONF_DIR: /opt/bitnami/spark/conf
     depends_on:
       spark-master:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8082:8081"
-    volumes:
-      - ./config/spark/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf:ro
-      - ./config/hadoop/core-site.xml:/opt/bitnami/spark/conf/core-site.xml:ro
-      - ./config/hadoop/hdfs-site.xml:/opt/bitnami/spark/conf/hdfs-site.xml:ro
-      - ./config/hive/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml:ro
-    networks:
-      - siem-network
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+          cpus: "2.0"
+
+  # ─────────────────────────────────────────────────────────
+  # Flog — Log Generators
+  # ─────────────────────────────────────────────────────────
 
   flog-web:
-    build:
-      context: ./flog
-      dockerfile: Dockerfile
+    <<: *flog-common
     container_name: flog-web
-    restart: unless-stopped
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka-broker:9092
+      <<: *flog-env
       KAFKA_TOPIC: web-logs
       LOG_PROFILE: web
-      BATCH_SIZE: "2000"
-      LOOP_DELAY: "1"
     depends_on:
+      kafka-broker:
+        condition: service_healthy
       spark-worker-1:
         condition: service_started
       spark-worker-2:
         condition: service_started
-    networks:
-      - siem-network
 
   flog-syslog:
-    build:
-      context: ./flog
-      dockerfile: Dockerfile
+    <<: *flog-common
     container_name: flog-syslog
-    restart: unless-stopped
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka-broker:9092
+      <<: *flog-env
       KAFKA_TOPIC: syslogs
       LOG_PROFILE: syslog
-      BATCH_SIZE: "2000"
-      LOOP_DELAY: "1"
     depends_on:
+      kafka-broker:
+        condition: service_healthy
       spark-worker-1:
         condition: service_started
       spark-worker-2:
         condition: service_started
-    networks:
-      - siem-network
 
   flog-app:
-    build:
-      context: ./flog
-      dockerfile: Dockerfile
+    <<: *flog-common
     container_name: flog-app
-    restart: unless-stopped
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka-broker:9092
+      <<: *flog-env
       KAFKA_TOPIC: app-logs
       LOG_PROFILE: json
-      BATCH_SIZE: "2000"
-      LOOP_DELAY: "1"
     depends_on:
+      kafka-broker:
+        condition: service_healthy
       spark-worker-1:
         condition: service_started
       spark-worker-2:
         condition: service_started
-    networks:
-      - siem-network
 
-  # ===== SUPERSET =====
-  superset-postgres:
-    image: postgres:13-alpine
-    container_name: superset-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: superset
-      POSTGRES_PASSWORD: superset123
-      POSTGRES_DB: superset
-    volumes:
-      - superset_postgres_data:/var/lib/postgresql/data
-    networks:
-      - siem-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U superset -d superset"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # ─────────────────────────────────────────────────────────
+  # Superset — Analytics & Dashboards
+  # ─────────────────────────────────────────────────────────
 
   superset-redis:
     image: redis:7-alpine
@@ -370,20 +437,24 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   superset:
-    image: apache/superset:latest
+    image: apache/superset:4.1.1
     container_name: superset
     user: root
     restart: unless-stopped
     depends_on:
-      superset-postgres:
+      postgres:
         condition: service_healthy
       superset-redis:
         condition: service_healthy
     environment:
       SUPERSET_SECRET_KEY: f8d93a10-2b4a-4e2b-b893-ecf9e2b1029c
-      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset123@superset-postgres:5432/superset
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset123@postgres:5432/superset
       REDIS_CELERY_DB: "0"
       REDIS_BROKER_URL: redis://superset-redis:6379/0
       REDIS_RESULTS_DB: "1"
@@ -397,15 +468,22 @@ services:
       - ./scripts:/app/scripts:ro
     command: >
       bash /app/scripts/superset_init.sh
+    deploy:
+      resources:
+        limits:
+          memory: 2G
 
-  # ===== ZEPPELIN =====
+  # ─────────────────────────────────────────────────────────
+  # Zeppelin — Interactive Notebooks
+  # ─────────────────────────────────────────────────────────
+
   zeppelin:
     image: apache/zeppelin:0.11.1
     container_name: zeppelin
     restart: unless-stopped
     depends_on:
       spark-master:
-        condition: service_started
+        condition: service_healthy
     environment:
       - SPARK_MASTER=spark://spark-master:7077
       - MASTER=spark://spark-master:7077
@@ -424,3 +502,7 @@ services:
       - ./config/hadoop/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
       - ./config/hive/hive-site.xml:/opt/hive/conf/hive-site.xml:ro
     command: ["bash", "/zeppelin/scripts/zeppelin_init.sh"]
+    deploy:
+      resources:
+        limits:
+          memory: 2G

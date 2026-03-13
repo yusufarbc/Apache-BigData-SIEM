@@ -2,35 +2,32 @@
 set -e
 
 echo "Installing system dependencies for sasl..."
-# We need build-essential and libsasl2-dev for sasl python package
 export DEBIAN_FRONTEND=noninteractive
 apt-get update && apt-get install -y build-essential libsasl2-dev python3-dev libsasl2-modules-gssapi-mit netcat-openbsd
 
 echo "Installing database drivers..."
-# The venv doesn't have pip, so we use system pip with --target
-pip install --target /app/.venv/lib/python3.10/site-packages pyhive thrift sasl thrift_sasl
+pip install pyhive thrift sasl thrift_sasl 2>/dev/null || true
 
 echo "Waiting for PostgreSQL to be ready..."
-# Wait for superset-postgres
-until nc -z superset-postgres 5432; do
+# Wait for unified postgres (hosts both metastore and superset DBs)
+until nc -z postgres 5432; do
   echo "Postgres is unavailable - sleeping"
   sleep 1
 done
 
 echo "Setting up Superset metadata..."
-/app/.venv/bin/superset db upgrade
-/app/.venv/bin/superset fab create-admin \
+superset db upgrade
+superset fab create-admin \
               --username admin \
               --password admin123 \
               --firstname Admin \
               --lastname User \
               --email admin@example.com || true
 
-/app/.venv/bin/superset init
+superset init
 
 echo "Adding Spark SQL Database Connection..."
-# Use venv's python to add the DB connection if not exists
-/app/.venv/bin/python - <<EOF
+python - <<EOF
 try:
     print("Starting app initialization...")
     from superset.app import create_app
@@ -61,4 +58,4 @@ except Exception as e:
 EOF
 
 echo "Starting Superset Server..."
-/app/.venv/bin/superset run -h 0.0.0.0 -p 8088 --with-threads --reload --debugger
+superset run -h 0.0.0.0 -p 8088 --with-threads --reload --debugger

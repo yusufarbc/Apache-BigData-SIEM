@@ -1,0 +1,51 @@
+# ──────────────────────────────────────────────────────────────
+# GitHub Actions Workflow: Auto-update Architecture Diagram
+# ──────────────────────────────────────────────────────────────
+# Triggers when docker-compose.yml is modified on the main branch.
+# Runs scripts/generate_mermaid.py to regenerate the Mermaid diagram
+# and commits the updated README.md back to the repository.
+# ──────────────────────────────────────────────────────────────
+
+name: Update Architecture Diagram
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "docker-compose.yml"
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  update-diagram:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Generate Mermaid diagram
+        run: python scripts/generate_mermaid.py
+
+      - name: Check for changes
+        id: check
+        run: |
+          git diff --quiet README.md || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push updated README
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "docs: auto-update architecture diagram from docker-compose.yml"
+          git push

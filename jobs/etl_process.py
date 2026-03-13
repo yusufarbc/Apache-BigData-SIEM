@@ -19,6 +19,9 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.types import StringType, StructField, StructType
 
+# Detection Rules Engine
+from detection_rules import initialize_alerts_table, evaluate_rules
+
 # Configuration Constants
 KAFKA_BOOTSTRAP = "kafka-broker:9092"
 KAFKA_TOPICS = "web-logs,syslogs,app-logs"
@@ -111,7 +114,8 @@ def extract_attributes(logs_df: DataFrame) -> DataFrame:
 
 def append_to_hive(batch_df: DataFrame, batch_id: int) -> None:
     """
-    ForeachBatch function to write the micro-batch into the Hive table.
+    ForeachBatch function to write the micro-batch into the Hive table,
+    then evaluate detection rules and write any alerts.
     
     :param batch_df: The DataFrame for the current micro-batch
     :param batch_id: The unique ID of the micro-batch
@@ -135,12 +139,20 @@ def append_to_hive(batch_df: DataFrame, batch_id: int) -> None:
         "ingest_date",
     ]
 
+    # 1. Write parsed logs to Hive
     (
         batch_df.select(*output_cols)
         .write.mode("append")
         .format("parquet")
         .insertInto("siem.logs_parsed", overwrite=False)
     )
+
+    # 2. Evaluate detection rules and generate alerts
+    spark = batch_df.sparkSession
+    batch_df.createOrReplaceTempView("batch_logs")
+    alert_count = evaluate_rules(spark, batch_df, batch_id)
+    if alert_count > 0:
+        print(f"  Batch {batch_id}: Generated {alert_count} alert(s)")
 
 
 def main() -> None:
@@ -149,6 +161,7 @@ def main() -> None:
     """
     spark = get_spark_session()
     initialize_hive_table(spark)
+    initialize_alerts_table(spark)
 
     # 1. Read raw stream from Kafka
     raw_stream = (

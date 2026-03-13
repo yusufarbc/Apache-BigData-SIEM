@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Apache BigData SIEM — Architecture</title>
+    <style>
+        body { 
+            background: #1a1a2e; 
+            color: #eee; 
+            font-family: 'Segoe UI', sans-serif;
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            padding: 20px;
+        }
+        h1 { color: #00b894; margin-bottom: 5px; }
+        p { color: #888; }
+        #diagram { 
+            background: #16213e; 
+            border-radius: 12px; 
+            padding: 30px; 
+            margin-top: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+    </style>
+</head>
+<body>
+    <h1>🛡️ Apache BigData SIEM — Platform Architecture</h1>
+    <p>Optimized with Unified PostgreSQL • 15 Services • 7 Layers</p>
+    <div id="diagram">
+        <pre class="mermaid">
+graph TD
+    subgraph FLOG["📡 Log Generators (Flog)"]
+        FW["Flog Web<br/><i>web-logs</i>"]
+        FS["Flog Syslog<br/><i>syslogs</i>"]
+        FA["Flog App<br/><i>app-logs</i>"]
+    end
+
+    subgraph KAFKA["📨 Messaging Layer"]
+        KB["Kafka Broker<br/><b>KRaft Mode</b><br/>:9092"]
+    end
+
+    subgraph SPARK["⚙️ Processing Layer (Spark)"]
+        SM["Spark Master<br/>:8080 · :7077 · :10000"]
+        SW1["Spark Worker 1<br/>2G RAM · 2 Cores<br/>:8081"]
+        SW2["Spark Worker 2<br/>2G RAM · 2 Cores<br/>:8082"]
+    end
+
+    subgraph HIVE["🗂️ Data Cataloging (Hive)"]
+        HM["Hive Metastore<br/>:9083"]
+        HS2["HiveServer2<br/>:10001 · :10002"]
+    end
+
+    subgraph HDFS["💾 Distributed Storage (HDFS)"]
+        NN["NameNode<br/>:9870 · :8020"]
+        DN1["DataNode 1"]
+        DN2["DataNode 2"]
+    end
+
+    subgraph DB["🗄️ Unified Database"]
+        PG[("PostgreSQL 15<br/>Hive + Superset")]
+    end
+
+    subgraph VIZ["📊 Analytics & Visualization"]
+        SRED["Superset Redis"]
+        SUP["Apache Superset<br/>:8088"]
+        ZEP["Apache Zeppelin<br/>:8090"]
+    end
+
+    FW -->|"web-logs"| KB
+    FS -->|"syslogs"| KB
+    FA -->|"app-logs"| KB
+    KB -->|"Stream Consume"| SM
+    SM --- SW1
+    SM --- SW2
+    SM -->|"Parquet Write"| NN
+    NN --- DN1
+    NN --- DN2
+    HM -->|"Metadata"| PG
+    HS2 -->|"Thrift"| HM
+    SM -.->|"Schema Registry"| HM
+    SUP -->|"Superset DB"| PG
+    SUP -->|"SQL Query"| HS2
+    SUP --- SRED
+    ZEP -->|"Interactive Analysis"| SM
+
+    style FLOG fill:#2d3436,stroke:#00b894,color:#dfe6e9
+    style KAFKA fill:#2d3436,stroke:#e17055,color:#dfe6e9
+    style SPARK fill:#2d3436,stroke:#fdcb6e,color:#dfe6e9
+    style HIVE fill:#2d3436,stroke:#74b9ff,color:#dfe6e9
+    style HDFS fill:#2d3436,stroke:#a29bfe,color:#dfe6e9
+    style DB fill:#2d3436,stroke:#636e72,color:#dfe6e9
+    style VIZ fill:#2d3436,stroke:#fd79a8,color:#dfe6e9
+        </pre>
+    </div>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'dark',
+            themeVariables: {
+                darkMode: true,
+                background: '#16213e',
+                primaryColor: '#0f3460',
+                primaryTextColor: '#eee',
+                lineColor: '#74b9ff',
+                fontSize: '14px'
+            }
+        });
+    </script>
+</body>
+</html>

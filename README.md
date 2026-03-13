@@ -10,10 +10,80 @@ Please check our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct
 ## 🚀 Architectural Overview
 The project implements a modern Lakehouse pattern to ensure data is processed instantly and stored in an optimized format for long-term security analysis.
 
-* **Ingestion:** **Apache Kafka** - Serves as a distributed message buffer to handle high Events Per Second (EPS) bursts.
-* **Processing:** **Apache Spark Streaming** - Performs real-time Log Parsing (Regex-based), normalization, and correlation.
-* **Cataloging:** **Apache Hive** - Provides a structured SQL interface over unstructured log data stored in HDFS.
-* **Storage:** **Apache Hadoop (HDFS)** - The backbone of the Data Lake, storing logs in **Apache Parquet** format for efficient columnar access.
+* **Ingestion:** **Apache Kafka** — Distributed message buffer handling high Events Per Second (EPS) bursts.
+* **Processing:** **Apache Spark Streaming** — Real-time log parsing (Regex), normalization, and correlation.
+* **Cataloging:** **Apache Hive** — Structured SQL interface over unstructured log data in HDFS.
+* **Storage:** **Apache Hadoop (HDFS)** — Data Lake backbone, storing logs in **Apache Parquet** format.
+* **Visualization:** **Apache Superset** & **Apache Zeppelin** — Dashboards, analytics, and interactive notebooks.
+
+### Platform Architecture Diagram
+
+<!-- ARCHITECTURE_DIAGRAM_START -->
+```mermaid
+graph TD
+    subgraph FLOG["📡 Log Generators (Flog)"]
+        FW["Flog Web<br/><i>web-logs</i>"]
+        FS["Flog Syslog<br/><i>syslogs</i>"]
+        FA["Flog App<br/><i>app-logs</i>"]
+    end
+
+    subgraph KAFKA["📨 Messaging Layer"]
+        KB["Kafka Broker<br/><b>KRaft Mode</b><br/>:9092"]
+    end
+
+    subgraph SPARK["⚙️ Processing Layer (Spark)"]
+        SM["Spark Master<br/>:8080 · :7077 · :10000"]
+        SW1["Spark Worker 1<br/>2G RAM · 2 Cores<br/>:8081"]
+        SW2["Spark Worker 2<br/>2G RAM · 2 Cores<br/>:8082"]
+    end
+
+    subgraph HIVE["🗂️ Data Cataloging (Hive)"]
+        HM["Hive Metastore<br/>:9083"]
+        HS2["Hive Server2<br/>:10001 · :10002"]
+    end
+
+    subgraph HDFS["💾 Distributed Storage (HDFS)"]
+        NN["Namenode<br/>:9870 · :8020"]
+        DN1["Datanode 1"]
+        DN2["Datanode 2"]
+    end
+
+    subgraph DB["🗄️ Unified Database"]
+        PG[("Postgres")]
+    end
+
+    subgraph VIZ["📊 Analytics & Visualization"]
+        SRED["Superset Redis"]
+        SUP["Superset<br/>:8088"]
+        ZEP["Zeppelin<br/>:8090"]
+    end
+
+    FW -->|"web-logs"| KB
+    FS -->|"syslogs"| KB
+    FA -->|"app-logs"| KB
+    KB -->|"Stream Consume"| SM
+    SM --- SW1
+    SM --- SW2
+    SM -->|"Parquet Write"| NN
+    NN --- DN1
+    NN --- DN2
+    HM -->|"Metadata"| PG
+    HS2 -->|"Thrift"| HM
+    SM -.->|"Schema Registry"| HM
+    SUP -->|"Superset DB"| PG
+    SUP -->|"SQL Query"| HS2
+    SUP --- SRED
+    ZEP -->|"Interactive Analysis"| SM
+
+    style FLOG fill:#2d3436,stroke:#00b894,color:#dfe6e9
+    style KAFKA fill:#2d3436,stroke:#e17055,color:#dfe6e9
+    style SPARK fill:#2d3436,stroke:#fdcb6e,color:#dfe6e9
+    style HIVE fill:#2d3436,stroke:#74b9ff,color:#dfe6e9
+    style HDFS fill:#2d3436,stroke:#a29bfe,color:#dfe6e9
+    style DB fill:#2d3436,stroke:#636e72,color:#dfe6e9
+    style VIZ fill:#2d3436,stroke:#fd79a8,color:#dfe6e9
+```
+<!-- ARCHITECTURE_DIAGRAM_END -->
 
 ## 💡 Key Features
 - **Real-time Threat Detection:** Immediate anomaly detection and alerting using Spark's windowing functions.
