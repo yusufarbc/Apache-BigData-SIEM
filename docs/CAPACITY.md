@@ -36,8 +36,8 @@ The architecture consists of a fully distributed Data Lakehouse environment with
 The cluster operates using Spark Structured Streaming on a micro-batch architecture. 
 
 ### Current Traffic (Simulated Load)
-- **Configuration**: 100 logs generated per second per simulator (`BATCH_SIZE="100"`, `LOOP_DELAY="1"`).
-- **Current EPS (Events Per Second)**: **~300 EPS** sustained.
+- **Configuration**: 2000 logs generated per second per simulator (`BATCH_SIZE="2000"`, `LOOP_DELAY="1"`).
+- **Current EPS (Events Per Second)**: **~6000 EPS** sustained.
 
 ### Maximum Theoretical Limits (Local 4-Core Setup)
 - **HDFS**: Limited by SATA/NVMe I/O. For Parquet format, easily handles **15,000+ EPS**.

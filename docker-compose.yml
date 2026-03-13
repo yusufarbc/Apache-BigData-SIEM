@@ -13,6 +13,7 @@ volumes:
   kafka-data:
   hive-warehouse:
   superset_postgres_data:
+  superset_data:
   zeppelin_data:
   zeppelin_notebooks:
 
@@ -289,7 +290,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka-broker:9092
       KAFKA_TOPIC: web-logs
       LOG_PROFILE: web
-      BATCH_SIZE: "100"
+      BATCH_SIZE: "2000"
       LOOP_DELAY: "1"
     depends_on:
       spark-worker-1:
@@ -309,7 +310,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka-broker:9092
       KAFKA_TOPIC: syslogs
       LOG_PROFILE: syslog
-      BATCH_SIZE: "100"
+      BATCH_SIZE: "2000"
       LOOP_DELAY: "1"
     depends_on:
       spark-worker-1:
@@ -329,7 +330,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka-broker:9092
       KAFKA_TOPIC: app-logs
       LOG_PROFILE: json
-      BATCH_SIZE: "100"
+      BATCH_SIZE: "2000"
       LOOP_DELAY: "1"
     depends_on:
       spark-worker-1:
@@ -373,6 +374,7 @@ services:
   superset:
     image: apache/superset:latest
     container_name: superset
+    user: root
     restart: unless-stopped
     depends_on:
       superset-postgres:
@@ -390,12 +392,11 @@ services:
       - "8088:8088"
     networks:
       - siem-network
+    volumes:
+      - superset_data:/app/superset_home
+      - ./scripts:/app/scripts:ro
     command: >
-      sh -c "superset db upgrade && 
-             superset fab create-admin --username admin --password admin123 --firstname Admin --lastname User --email admin@example.com && 
-             superset load_examples && 
-             superset init && 
-             superset run -h 0.0.0.0 -p 8088"
+      bash /app/scripts/superset_init.sh
 
   # ===== ZEPPELIN =====
   zeppelin:
@@ -408,6 +409,8 @@ services:
     environment:
       - SPARK_MASTER=spark://spark-master:7077
       - MASTER=spark://spark-master:7077
+      - ZEPPELIN_PORT=8080
+      - ZEPPELIN_JAVA_OPTS=-Dspark.driver.memory=1g -Dspark.executor.memory=1g
     ports:
       - "8090:8080"
     networks:
@@ -415,7 +418,9 @@ services:
     volumes:
       - zeppelin_data:/zeppelin/logs
       - zeppelin_notebooks:/zeppelin/notebook
+      - ./scripts:/zeppelin/scripts:ro
       - ./config/spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
       - ./config/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
       - ./config/hadoop/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
       - ./config/hive/hive-site.xml:/opt/hive/conf/hive-site.xml:ro
+    command: ["bash", "/zeppelin/scripts/zeppelin_init.sh"]
