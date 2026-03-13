@@ -12,6 +12,9 @@ volumes:
   postgres-data:
   kafka-data:
   hive-warehouse:
+  superset_postgres_data:
+  zeppelin_data:
+  zeppelin_notebooks:
 
 services:
   namenode:
@@ -131,6 +134,7 @@ services:
     restart: unless-stopped
     environment:
       SERVICE_NAME: hiveserver2
+      DB_DRIVER: postgres
       IS_RESUME: "true"
       SERVICE_OPTS: >-
         -Dhive.metastore.uris=thrift://hive-metastore:9083
@@ -143,7 +147,7 @@ services:
       hive-metastore:
         condition: service_started
     ports:
-      - "10000:10000"
+      - "10001:10000"
       - "10002:10002"
     volumes:
       - hive-warehouse:/opt/hive/data/warehouse
@@ -202,12 +206,20 @@ services:
       SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "no"
       SPARK_SSL_ENABLED: "no"
       SPARK_CONF_DIR: /opt/bitnami/spark/conf
+    command: >
+      /bin/bash -c "
+      /opt/bitnami/scripts/spark/run.sh &
+      sleep 10 &&
+      /opt/bitnami/spark/sbin/start-thriftserver.sh --master spark://spark-master:7077 --hiveconf hive.server2.thrift.port=10000 &&
+      wait
+      "
     depends_on:
       kafka-broker:
         condition: service_healthy
     ports:
       - "8080:8080"
       - "7077:7077"
+      - "10000:10000"
     volumes:
       - ./config/spark/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf:ro
       - ./config/hadoop/core-site.xml:/opt/bitnami/spark/conf/core-site.xml:ro
@@ -326,3 +338,84 @@ services:
         condition: service_started
     networks:
       - siem-network
+
+  # ===== SUPERSET =====
+  superset-postgres:
+    image: postgres:13-alpine
+    container_name: superset-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset123
+      POSTGRES_DB: superset
+    volumes:
+      - superset_postgres_data:/var/lib/postgresql/data
+    networks:
+      - siem-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U superset -d superset"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  superset-redis:
+    image: redis:7-alpine
+    container_name: superset-redis
+    restart: unless-stopped
+    networks:
+      - siem-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  superset:
+    image: apache/superset:latest
+    container_name: superset
+    restart: unless-stopped
+    depends_on:
+      superset-postgres:
+        condition: service_healthy
+      superset-redis:
+        condition: service_healthy
+    environment:
+      SUPERSET_SECRET_KEY: f8d93a10-2b4a-4e2b-b893-ecf9e2b1029c
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset123@superset-postgres:5432/superset
+      REDIS_CELERY_DB: "0"
+      REDIS_BROKER_URL: redis://superset-redis:6379/0
+      REDIS_RESULTS_DB: "1"
+      REDIS_CACHE_DB: "2"
+    ports:
+      - "8088:8088"
+    networks:
+      - siem-network
+    command: >
+      sh -c "superset db upgrade && 
+             superset fab create-admin --username admin --password admin123 --firstname Admin --lastname User --email admin@example.com && 
+             superset load_examples && 
+             superset init && 
+             superset run -h 0.0.0.0 -p 8088"
+
+  # ===== ZEPPELIN =====
+  zeppelin:
+    image: apache/zeppelin:0.11.1
+    container_name: zeppelin
+    restart: unless-stopped
+    depends_on:
+      spark-master:
+        condition: service_started
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - MASTER=spark://spark-master:7077
+    ports:
+      - "8090:8080"
+    networks:
+      - siem-network
+    volumes:
+      - zeppelin_data:/zeppelin/logs
+      - zeppelin_notebooks:/zeppelin/notebook
+      - ./config/spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
+      - ./config/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+      - ./config/hadoop/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+      - ./config/hive/hive-site.xml:/opt/hive/conf/hive-site.xml:ro
