@@ -13,7 +13,7 @@ build_flog_command() {
       echo "flog -f apache_common -n ${BATCH_SIZE}"
       ;;
     syslog)
-      echo "flog -f syslog_rfc5424 -n ${BATCH_SIZE}"
+      echo "flog -f rfc5424 -n ${BATCH_SIZE}"
       ;;
     json)
       echo "flog -f apache_combined -o json -n ${BATCH_SIZE}"

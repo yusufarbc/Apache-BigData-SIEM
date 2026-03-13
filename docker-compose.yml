@@ -121,6 +121,7 @@ services:
       - ./config/hive/hive-site.xml:/opt/hive/conf/hive-site.xml:ro
       - ./config/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
       - ./config/hadoop/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+      - ./config/hive/postgresql-42.7.3.jar:/opt/hive/lib/postgresql-42.7.3.jar:ro
     networks:
       - siem-network
 
@@ -149,11 +150,12 @@ services:
       - ./config/hive/hive-site.xml:/opt/hive/conf/hive-site.xml:ro
       - ./config/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
       - ./config/hadoop/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+      - ./config/hive/postgresql-42.7.3.jar:/opt/hive/lib/postgresql-42.7.3.jar:ro
     networks:
       - siem-network
 
   kafka-broker:
-    image: bitnami/kafka:3.7
+    image: bitnamilegacy/kafka:3.7.1-debian-12-r9
     container_name: kafka-broker
     restart: unless-stopped
     environment:
@@ -186,7 +188,7 @@ services:
       - siem-network
 
   spark-master:
-    image: bitnami/spark:3.5
+    image: bitnamilegacy/spark:3.5.6-debian-12-r1
     container_name: spark-master
     restart: unless-stopped
     environment:
@@ -216,7 +218,7 @@ services:
       - siem-network
 
   spark-worker-1:
-    image: bitnami/spark:3.5
+    image: bitnamilegacy/spark:3.5.6-debian-12-r1
     container_name: spark-worker-1
     restart: unless-stopped
     environment:
@@ -241,7 +243,7 @@ services:
       - siem-network
 
   spark-worker-2:
-    image: bitnami/spark:3.5
+    image: bitnamilegacy/spark:3.5.6-debian-12-r1
     container_name: spark-worker-2
     restart: unless-stopped
     environment:
