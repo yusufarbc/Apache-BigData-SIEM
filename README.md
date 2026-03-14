@@ -11,10 +11,10 @@ Please check our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct
 The project implements a modern Lakehouse pattern to ensure data is processed instantly and stored in an optimized format for long-term security analysis.
 
 * **Ingestion:** **Apache Kafka** — Distributed message buffer handling high Events Per Second (EPS) bursts.
-* **Processing:** **Apache Spark Streaming** — Real-time log parsing (Regex), normalization, and correlation.
+* **Processing:** **Apache Spark Streaming** — Real-time log parsing (Regex + JSON), normalization, and correlation.
 * **Cataloging:** **Apache Hive** — Structured SQL interface over unstructured log data in HDFS.
 * **Storage:** **Apache Hadoop (HDFS)** — Data Lake backbone, storing logs in **Apache Parquet** format.
-* **Visualization:** **Apache Superset** & **Apache Zeppelin** — Dashboards, analytics, and interactive notebooks.
+* **Visualization:** **Apache Superset** — SOC dashboards, SQL Lab, and scheduled alerts.
 
 ### Platform Architecture Diagram
 
@@ -55,7 +55,6 @@ graph TD
     subgraph VIZ["📊 Analytics & Visualization"]
         SRED["Superset Redis"]
         SUP["Superset<br/>:8088"]
-        ZEP["Zeppelin<br/>:8090"]
     end
 
     FW -->|"web-logs"| KB
@@ -73,15 +72,14 @@ graph TD
     SUP -->|"Superset DB"| PG
     SUP -->|"SQL Query"| HS2
     SUP --- SRED
-    ZEP -->|"Interactive Analysis"| SM
 
-    style FLOG fill:#2d3436,stroke:#00b894,color:#dfe6e9
-    style KAFKA fill:#2d3436,stroke:#e17055,color:#dfe6e9
-    style SPARK fill:#2d3436,stroke:#fdcb6e,color:#dfe6e9
-    style HIVE fill:#2d3436,stroke:#74b9ff,color:#dfe6e9
-    style HDFS fill:#2d3436,stroke:#a29bfe,color:#dfe6e9
-    style DB fill:#2d3436,stroke:#636e72,color:#dfe6e9
-    style VIZ fill:#2d3436,stroke:#fd79a8,color:#dfe6e9
+    style FLOG fill:#f8fafc,stroke:#00b894,color:#0f172a
+    style KAFKA fill:#f8fafc,stroke:#e17055,color:#0f172a
+    style SPARK fill:#f8fafc,stroke:#fdcb6e,color:#0f172a
+    style HIVE fill:#f8fafc,stroke:#74b9ff,color:#0f172a
+    style HDFS fill:#f8fafc,stroke:#a29bfe,color:#0f172a
+    style DB fill:#f8fafc,stroke:#636e72,color:#0f172a
+    style VIZ fill:#f8fafc,stroke:#fd79a8,color:#0f172a
 ```
 <!-- ARCHITECTURE_DIAGRAM_END -->
 
@@ -92,11 +90,12 @@ graph TD
 - **Cost-Effective Scalability:** Built entirely on the open-source Apache ecosystem, eliminating expensive per-terabyte licensing.
 
 ## 🛠️ Technology Stack
-- **Messaging:** Apache Kafka
-- **Processing Engine:** Apache Spark (PySpark)
-- **Data Warehouse:** Apache Hive
-- **Distributed Storage:** Apache Hadoop (HDFS)
-- **Environment:** Docker & Docker-Compose
+- **Messaging:** Apache Kafka 3.7.x (KRaft mode — no Zookeeper)
+- **Processing Engine:** Apache Spark 3.5.x (PySpark)
+- **Data Warehouse:** Apache Hive 4.0.x
+- **Distributed Storage:** Apache Hadoop 3.2.x (HDFS)
+- **Visualization:** Apache Superset 4.1.x
+- **Environment:** Docker & Docker Compose
 
 ## 📂 Quick Start
 
@@ -111,11 +110,22 @@ make up
 
 This will deploy:
 
-- Kafka (KRaft mode)
+- Kafka (KRaft mode — no Zookeeper dependency)
 - Hadoop HDFS (1 NameNode + 2 DataNodes)
 - Hive Metastore + HiveServer2 + PostgreSQL Metastore DB
-- Spark (1 Master + 2 Workers)
+- Spark (1 Master + 2 Workers + Thrift Server on :10000)
+- Superset + Redis (SOC dashboards at :8088)
 - 3 distributed flog producers (`web-logs`, `syslogs`, `app-logs`)
+
+**Web UIs after startup:**
+
+| Service | URL |
+|---------|-----|
+| Spark Master | http://localhost:8080 |
+| HDFS NameNode | http://localhost:9870 |
+| Superset | http://localhost:8088 |
+| Spark Worker 1 | http://localhost:8081 |
+| Spark Worker 2 | http://localhost:8082 |
 
 ### 2) Run the ETL Job
 
@@ -126,22 +136,28 @@ make run-job
 
 ### 3) Validate Distributed Health
 
-Use the operational runbook in `docs/verification-guide.md` to verify:
+Use the operational runbooks in `docs/` to verify:
 
-- HDFS DataNode distribution
-- Hive connectivity
-- Kafka topic flow
-- Spark worker registration
-- Hive table population from Kafka stream
+- `docs/verification-guide.md` — HDFS, Hive, Kafka, Spark health checks
+- `docs/superset-guide.md` — Superset connection, query examples, and dashboard setup
+- `docs/EXAMPLE_QUERIES.md` — Raw SQL threat-hunting queries
+- `docs/CAPACITY.md` — Sizing recommendations
 
-## 📁 Added Infrastructure Files
+## 📁 Project Structure
 
-- `docker-compose.yml`
-- `config/hadoop/core-site.xml`
-- `config/hadoop/hdfs-site.xml`
-- `config/hive/hive-site.xml`
-- `config/spark/spark-defaults.conf`
-- `flog/Dockerfile`
-- `flog/publish_flog.sh`
-- `jobs/etl_process.py`
-- `docs/verification-guide.md`
+- `docker-compose.yml` — Full platform stack definition
+- `Makefile` — Convenience wrapper for common commands
+- `config/hadoop/core-site.xml` — HDFS client configuration
+- `config/hadoop/hdfs-site.xml` — HDFS replication settings
+- `config/hive/hive-site.xml` — Hive Metastore connection
+- `config/spark/spark-defaults.conf` — Spark tuning
+- `flog/Dockerfile` — Log generator image
+- `flog/publish_flog.sh` — Flog → Kafka producer script
+- `jobs/etl_process.py` — Kafka → Hive Parquet ETL job
+- `jobs/detection_rules.py` — Spark SQL based SIEM detection engine
+- `docs/verification-guide.md` — Operational health runbook
+- `docs/superset-guide.md` — Superset connection & SOC dashboard guide
+- `docs/EXAMPLE_QUERIES.md` — SQL threat-hunting query examples
+- `docs/CAPACITY.md` — Storage and memory sizing guide
+- `research/` — Technical deep-dive documents for each component
+- `showcase/` — Interactive HTML presentation of the platform

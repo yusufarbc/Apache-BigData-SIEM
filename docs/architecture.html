@@ -5,22 +5,23 @@
     <title>Apache BigData SIEM — Architecture</title>
     <style>
         body { 
-            background: #1a1a2e; 
-            color: #eee; 
+            background: #ffffff; 
+            color: #0f172a; 
             font-family: 'Segoe UI', sans-serif;
             display: flex; 
             flex-direction: column;
             align-items: center; 
             padding: 20px;
         }
-        h1 { color: #00b894; margin-bottom: 5px; }
-        p { color: #888; }
+        h1 { color: #059669; margin-bottom: 5px; }
+        p { color: #4b5563; }
         #diagram { 
-            background: #16213e; 
+            background: #f8fafc; 
             border-radius: 12px; 
             padding: 30px; 
             margin-top: 20px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
         }
     </style>
 </head>
@@ -64,7 +65,6 @@ graph TD
     subgraph VIZ["📊 Analytics & Visualization"]
         SRED["Superset Redis"]
         SUP["Apache Superset<br/>:8088"]
-        ZEP["Apache Zeppelin<br/>:8090"]
     end
 
     FW -->|"web-logs"| KB
@@ -80,30 +80,29 @@ graph TD
     HS2 -->|"Thrift"| HM
     SM -.->|"Schema Registry"| HM
     SUP -->|"Superset DB"| PG
-    SUP -->|"SQL Query"| HS2
+    SUP -->|"SQL Query"| SM
     SUP --- SRED
-    ZEP -->|"Interactive Analysis"| SM
 
-    style FLOG fill:#2d3436,stroke:#00b894,color:#dfe6e9
-    style KAFKA fill:#2d3436,stroke:#e17055,color:#dfe6e9
-    style SPARK fill:#2d3436,stroke:#fdcb6e,color:#dfe6e9
-    style HIVE fill:#2d3436,stroke:#74b9ff,color:#dfe6e9
-    style HDFS fill:#2d3436,stroke:#a29bfe,color:#dfe6e9
-    style DB fill:#2d3436,stroke:#636e72,color:#dfe6e9
-    style VIZ fill:#2d3436,stroke:#fd79a8,color:#dfe6e9
+    style FLOG fill:#f8fafc,stroke:#059669,color:#0f172a
+    style KAFKA fill:#fff7ed,stroke:#ea580c,color:#0f172a
+    style SPARK fill:#fff7ed,stroke:#d97706,color:#0f172a
+    style HIVE fill:#eff6ff,stroke:#2563eb,color:#0f172a
+    style HDFS fill:#f5f3ff,stroke:#7c3aed,color:#0f172a
+    style DB fill:#f9fafb,stroke:#4b5563,color:#0f172a
+    style VIZ fill:#fdf2f8,stroke:#db2777,color:#0f172a
         </pre>
     </div>
     <script type="module">
         import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
         mermaid.initialize({ 
             startOnLoad: true, 
-            theme: 'dark',
+            theme: 'default',
             themeVariables: {
-                darkMode: true,
-                background: '#16213e',
-                primaryColor: '#0f3460',
-                primaryTextColor: '#eee',
-                lineColor: '#74b9ff',
+                darkMode: false,
+                background: '#f8fafc',
+                primaryColor: '#e0f2fe',
+                primaryTextColor: '#0f172a',
+                lineColor: '#2563eb',
                 fontSize: '14px'
             }
         });

@@ -1,6 +1,7 @@
 # Example SIEM Queries
 
-This document provides example SQL queries for the Apache BigData SIEM environment. These queries can be executed in **Apache Zeppelin** (using the `%jdbc` or `%spark.sql` interpreters) or in **Apache Superset** SQL Lab.
+This document provides example SQL queries for the Apache BigData SIEM environment. All queries can be executed in **Apache Superset** SQL Lab (connected to Spark Thrift Server on port `10000`).
+
 
 The primary table for analysis is `siem.logs_parsed`.
 

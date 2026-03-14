@@ -3,7 +3,7 @@
 This document outlines the hardware footprint, maximum theoretical throughput, and sizing capabilities of the localized SIEM cluster.
 
 ## 1. Container Details (Microservices)
-The architecture consists of a fully distributed Data Lakehouse environment with **17 distinct containers**:
+The architecture consists of a fully distributed Data Lakehouse environment with **16 distinct containers**:
 
 ### Log Simulation (3 Containers) - *Test Environment Only*
 - **`flog-web`, `flog-app`, `flog-syslog`** (x3): Generators simulating real-time log traffic. These act as dummy log sources and are explicitly for testing/demonstration.
@@ -15,19 +15,19 @@ The architecture consists of a fully distributed Data Lakehouse environment with
 - **`namenode`** (x1): HDFS namespace manager.
 - **`datanode-1`, `datanode-2`** (x2): HDFS storage nodes holding the raw data and Parquet files.
 
-### Processing & ETL Tier (3 Containers)
+### Processing & ETL Tier (4 Containers)
 - **`spark-master`** (x1): Spark cluster manager & distributed SQL Thrift Server (Port 10000).
 - **`spark-worker-1`, `spark-worker-2`** (x2): Executors running PySpark Streaming tasks (4 cores, 4GB RAM combined).
+- **`spark-etl`** (x1): Automated job submitter for the ETL stream.
 
 ### Metadata & Catalog Tier (4 Containers)
 - **`hive-metastore-db`** (x1): PostgreSQL backend for schemas.
 - **`hive-metastore`** (x1): Apache Hive catalog service.
 - **`hive-server2`** (x1): Standard JDBC/ODBC Hive interface (Port 10001).
 
-### Analysis & Web GUI Tier (3 Containers)
-- **`zeppelin`** (x1): Interactive Spark SQL notebook.
+### Analysis & Web GUI Tier (2 Containers)
 - **`superset`** (x1): BI metrics dashboard.
-- **`superset-postgres`, `superset-redis`** (x2): Underlying DB/Cache for Superset.
+- **`superset-redis`** (x1): Underlying Cache for Superset.
 
 ---
 
@@ -59,7 +59,7 @@ Approximate consumptions of the local Docker network based on resting/low-load s
 | **Ingestion (Kafka)**   | ~1.8 %          | ~711 MiB           | Stable. Memory is regulated by JVM Heap sizes. |
 | **Compute (Spark)**     | ~1.0 %          | ~1.6 GiB           | Bursts occurring every 1 second during ETL micro-batches. |
 | **Metadata (Hive)**     | ~0.1 %          | ~695 MiB           | Passive most of the time. |
-| **GUI (Zeppelin/BI)**   | ~0.7 %          | ~600 MiB           | Spikes locally when rendering heavy Superset dashboards. |
+| **GUI (Superset/BI)**   | ~0.7 %          | ~600 MiB           | Spikes locally when rendering heavy Superset dashboards. |
 | **Total Allocation**    | **~23 % CPU**   | **~5.8 GiB (Total)**| Total footprint on the host Docker Engine. |
 
 **Disk Scaling:** Log consumption scales linearly based on compression ratios. Storing data in Hive as `.parquet` drastically reduces storage footprints over standard `.csv` or `.json` (typically a 10x - 20x reduction).

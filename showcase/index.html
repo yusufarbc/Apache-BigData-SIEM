@@ -10,21 +10,23 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #f8fafc;
-      --panel: #ffffff;
-      --panel-2: #ffffff;
-      --panel-3: #f1f5f9;
+      --bg: #ffffff; /* Light background for projector visibility */
+      --panel: #f8fafc;
+      --panel-2: #f1f5f9;
+      --panel-3: #e2e8f0;
       --text: #0f172a;
       --muted: #475569;
-      --accent: #0284c7;
+      --accent: #2563eb;
       --accent-2: #ea580c;
       --ok: #16a34a;
       --border: #e2e8f0;
       /* Component colors */
       --color-kafka: #E84D0E;
       --color-spark: #E25A1C;
-      --color-hadoop: #F0E60F; /* modified for better read: #FDE047 tech yellow */
+      --color-hadoop: #FDE047;
       --color-hive: #FDE047;
+      --glass: rgba(255, 255, 255, 0.9);
+      --glass-border: rgba(0, 0, 0, 0.1);
     }
 
     * { box-sizing: border-box; }
@@ -66,9 +68,7 @@
     }
 
     .hero {
-      background: radial-gradient(circle at center, #f0f9ff 0%, #e0f2fe 100%);
-      background-image: radial-gradient(#bae6fd 1px, transparent 1px);
-      background-size: 30px 30px;
+      background: var(--bg);
       align-items: center;
       justify-content: center;
       text-align: center;
@@ -82,7 +82,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: radial-gradient(circle at center, transparent 0%, #e0f2fe 80%);
+      background: radial-gradient(circle at center, transparent 0%, rgba(255,255,255,0.8) 80%);
       pointer-events: none;
     }
 
@@ -96,10 +96,7 @@
       font-weight: 800;
       margin-bottom: 1.5rem;
       line-height: 1.1;
-      background: linear-gradient(135deg, #0c4a6e 0%, #0284c7 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: var(--text);
       letter-spacing: -1px;
     }
 
@@ -131,11 +128,11 @@
       gap: 6px;
       padding: 6px 14px;
       border-radius: 999px;
-      background: rgba(34, 197, 94, 0.14);
+      background: rgba(22, 163, 74, 0.1);
       color: var(--ok);
       font-size: 1.2rem;
       margin-left: 12px;
-      border: 1px solid rgba(34, 197, 94, 0.3);
+      border: 1px solid rgba(22, 163, 74, 0.2);
       font-weight: 600;
     }
 
@@ -153,7 +150,7 @@
       color: var(--accent);
       margin: 0 0 1.8rem 0;
       padding-bottom: 0.8rem;
-      border-bottom: 4px solid #bae6fd;
+      border-bottom: 4px solid #334155;
       display: inline-block;
       align-self: flex-start;
     }
@@ -161,7 +158,7 @@
     .presentation-list {
       margin: 0;
       padding-left: 2rem;
-      color: #334155;
+      color: var(--text);
     }
 
     .presentation-list li {
@@ -201,7 +198,7 @@
     .arch-box h4 {
       margin: 0 0 0.8rem;
       font-size: 1.8rem;
-      color: #0f172a;
+      color: var(--text);
     }
 
     .arch-box p {
@@ -243,8 +240,8 @@
     .code-block {
       font-size: 1.2rem;
       padding: 1.5rem;
-      background: #0f172a;
-      color: #e2e8f0;
+      background: var(--panel-2);
+      color: var(--text);
       border-left: 6px solid #38bdf8;
       border-radius: 12px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.15);
@@ -282,13 +279,14 @@
       right: 18px;
       top: 18px;
       z-index: 40;
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid var(--border);
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
       border-radius: 999px;
       padding: 8px 14px;
       font-size: 1.1rem;
-      color: var(--muted);
-      backdrop-filter: blur(8px);
+      color: var(--text);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
     .note {
@@ -296,15 +294,16 @@
       left: 18px;
       bottom: 18px;
       z-index: 40;
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid var(--border);
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
       border-radius: 12px;
       padding: 10px 12px;
       font-size: 1rem;
       color: var(--muted);
       line-height: 1.4;
       max-width: 420px;
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
     /* Diagram Styles */
@@ -341,7 +340,7 @@
       margin-bottom: 1rem;
     }
     .tech-desc strong {
-      color: var(--text);
+      color: #38bdf8;
     }
 
     @media (max-width: 1100px) {
@@ -358,13 +357,13 @@
   </style>
 </head>
 <body>
-  <div class="progress" id="progress">Slide 1 / 15</div>
+  <div class="progress" id="progress">Slide 1 / 13</div>
 
   <div class="page" id="slides">
     <header class="hero">
       <div class="badge">Apache-BigData-SIEM</div>
       <div class="title">Lakehouse SIEM Showcase <span class="ok-badge">Production Stack</span></div>
-      <div class="subtitle">Spark, Hive, Kafka ve Hadoop ile açık kaynaklı, ölçeklenebilir ve gerçek zamanlı güvenlik analitiği mimarisi.</div>
+      <div class="subtitle">Spark, Hive, Kafka, Hadoop ve Superset ile açık kaynaklı, ölçeklenebilir ve gerçek zamanlı güvenlik analitiği platformu.</div>
     </header>
 
     <section class="card">
@@ -401,9 +400,9 @@
           <p>Saniyede milyonlarca log üretildiğinde (DDoS saldırısı, log burst vb.) sistemlerin çökmesini engellemek için bir <strong>"tampon" (buffer)</strong> görevi görür.</p>
           <ul class="presentation-list" style="padding-left:0;">
             <li><strong>Topic:</strong> Mantıksal veri kanallarıdır (örn. web-logs, syslogs).</li>
-            <li><strong>Producer:</strong> Veriyi üreten sistemler (Flog).</li>
-            <li><strong>Consumer:</strong> Veriyi okuyan sistemler (Spark).</li>
-            <li><strong>KRAFT Mimarisi:</strong> Artık Zookeeper'a ihtiyaç duymadan kendi kendini yönetebilir.</li>
+            <li><strong>Zero-Copy & PageCache:</strong> Veriyi RAM'den diske kopyalamadan doğrudan ağ kartına (NIC) gönderir, bu da inanılmaz düşük gecikme sağlar.</li>
+            <li><strong>KRAFT Mimarisi:</strong> Artık Zookeeper'a ihtiyaç duymadan metadata yönetimini kendi içinde yapar (KRaft mode).</li>
+            <li><strong>Scalability:</strong> Partition yapısı sayesinde yatayda sınırsız ölçeklenebilir.</li>
           </ul>
         </div>
         <div>
@@ -427,9 +426,9 @@
           <p><strong>Apache Spark</strong>, büyük veri kümelerini bellek (RAM) üzerinde paralel olarak işleyebilen, inanılmaz hızlı bir dağıtık analiz motorudur.</p>
           <p>Projelerimizde <strong>Spark Structured Streaming</strong> kullanarak Kafka'dan akan logları <em>anlık olarak</em> okur, temizler, formatlar (Extract, Transform, Load - ETL) ve depolarız.</p>
           <ul class="presentation-list" style="padding-left:0;">
-            <li><strong>Micro-batch:</strong> Veriyi küçük paketler halinde sürekli işler.</li>
-            <li><strong>Master-Worker:</strong> 1 Master yönetir, N adet Worker ağır işi paralel yapar.</li>
-            <li><strong>Fault Tolerance:</strong> Bir işçi düşerse iş kaybolmaz, devredilir.</li>
+            <li><strong>Project Tungsten:</strong> Veriyi Java nesneleri yerine ham binary formatında (Off-Heap) işleyerek Garbage Collection yükünü sıfırlar.</li>
+            <li><strong>Catalyst Optimizer:</strong> SQL sorgularını otomatik olarak optimize eder ve en hızlı çalışma planını (DAG) oluşturur.</li>
+            <li><strong>Structured Streaming:</strong> "Exactly-Once" işlem garantisi ile veri kaybını önler.</li>
           </ul>
         </div>
         <div>
@@ -443,7 +442,7 @@
 
     <!-- HADOOP -->
     <section class="card">
-      <h3>4) Veri Gölü: Apache Hadoop (HDFS) Nedir?</h3>
+      <h3>4) Veri Gölü: Apache Hadoop (HDFS)</h3>
       <div class="tech-grid">
         <div class="tech-desc">
           <p><strong>HDFS (Hadoop Distributed File System)</strong>, devasa boyutlardaki dosyaları standart sunucuların disklerine dağıtarak depolayan bir dosya sistemidir.</p>
@@ -451,7 +450,7 @@
           <ul class="presentation-list" style="padding-left:0;">
             <li><strong>NameNode:</strong> Sistemin beyni; hangi dosya hangi makinede, haritayı tutar.</li>
             <li><strong>DataNode:</strong> Gerçek veriyi depolayan işçi sunucular.</li>
-            <li><strong>Replication:</strong> Bir sunucu yansa bile veri diğer kopyalardan kurtarılır (Bizim projede X2).</li>
+            <li><strong>Reliability:</strong> Her veri bloğu varsayılan olarak 3 (bizde 2) kez kopyalanır.</li>
           </ul>
         </div>
         <div>
@@ -472,14 +471,15 @@
 
     <!-- HIVE -->
     <section class="card">
-      <h3>5) Veri Kataloğu: Apache Hive Nedir?</h3>
+      <h3>5) Veri Kataloğu: Apache Hive</h3>
       <div class="tech-grid">
         <div class="tech-desc">
-          <p><strong>Apache Hive</strong>, Hadoop (HDFS) üzerinde depolanan karmakarışık ve ham verilere <strong>SQL</strong> kullanarak sorgu atmamızı sağlayan veri ambarı katmanıdır.</p>
-          <p>SIEM analistlerinin Python/Java yazmasına gerek kalmaz; bildikleri "SELECT * FROM logs" komutlarıyla HDFS'teki milyonlarca logu filtreleyebilirler.</p>
+          <p><strong>Apache Hive</strong>, Hadoop üzerinde depolanan ham verilere <strong>SQL</strong> kullanarak sorgu atmamızı sağlayan bir veri ambarı katmanıdır.</p>
+          <p>Lakehouse mimarisinin kilit taşıdır; veriyi bir tablo gibi gösterir.</p>
           <ul class="presentation-list" style="padding-left:0;">
-            <li><strong>Hive Metastore:</strong> Dosyaların tablo yapısını (şemasını), kolon isimlerini tutar (via PostgreSQL).</li>
-            <li><strong>HiveServer2:</strong> Analistlerin uzaktan JDBC/ODBC ile bağlanıp sorgu attıkları servistir.</li>
+            <li><strong>Hive Metastore:</strong> Dosyaların tablo yapısını ve şemasını yönetir.</li>
+            <li><strong>Lakehouse Pattern:</strong> Parquet gibi yüksek performanslı kolonel formatlarla SQL hızını birleştirir.</li>
+            <li><strong>Interoperability:</strong> Hem Spark hem de BI araçları (Superset) aynı metadata üzerinden konuşur.</li>
           </ul>
         </div>
         <div>
@@ -492,9 +492,33 @@
       </div>
     </section>
 
+    <!-- SUPERSET -->
+    <section class="card">
+      <h3>6) Görselleştirme: Apache Superset</h3>
+      <div class="tech-grid">
+        <div class="tech-desc">
+          <p><strong>Apache Superset</strong>, kurumsal düzeyde bir veri görselleştirme ve BI (Business Intelligence) platformudur.</p>
+          <p>SOC analistleri için gerçek zamanlı güvenlik dashboardları, saldırı trendi grafikleri ve raporlar oluşturmak için kullanılır.</p>
+          <ul class="presentation-list" style="padding-left:0;">
+            <li><strong>SQL Lab:</strong> Hive üzerindeki petabaytlarca log verisini doğrudan tarayıcıdan SQL ile sorgula.</li>
+            <li><strong>Dashboard:</strong> Grafik, tablo, harita gibi görsel bileşenlerle SOC paneli oluştur.</li>
+            <li><strong>Bağlantı:</strong> Spark Thrift Server (port 10000) üzerinden Hive'a JDBC ile bağlanır.</li>
+          </ul>
+        </div>
+        <div>
+          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+             <rect x="20" y="30" width="160" height="110" rx="10" fill="none" stroke="#fb923c" stroke-width="8"/>
+             <rect x="35" y="50" width="55" height="70" rx="5" fill="#fb923c" opacity="0.3"/>
+             <rect x="100" y="80" width="65" height="40" rx="5" fill="#fb923c" opacity="0.3"/>
+             <path d="M35 120 Q63 60 90 100 Q115 130 130 85 Q150 50 165 80" fill="none" stroke="#fb923c" stroke-width="4"/>
+             <text x="100" y="170" font-family="sans-serif" font-size="16" font-weight="bold" fill="#fb923c" text-anchor="middle">SUPERSET</text>
+          </svg>
+        </div>
+      </div>
+    </section>
 
     <section class="card">
-      <h3>6) Proje Akış Mimarisi</h3>
+      <h3>7) Proje Akış Mimarisi</h3>
       <p class="presentation-title">Uçtan uca veri yolculuğu (Data Pipeline)</p>
       
       <div style="text-align: center; margin-top: 1rem; height: 100%; display: flex; justify-content: center; align-items: center;">
@@ -541,7 +565,7 @@
     </section>
 
     <section class="card">
-      <h3>7) Mikroservis & Konteyner Mimarisi</h3>
+      <h3>8) Mikroservis & Konteyner Mimarisi</h3>
       <div class="tech-grid">
         <div class="tech-desc">
           <p>Big Data platformumuz devasa bir <strong>monolit yapı değildir.</strong> Her bir Apache bileşeni birbirinden tamamen izole edilmiş, kendi yaşam döngüsü olan Docker konteynerleri (Mikroservisler) olarak çalışır.</p>
@@ -576,52 +600,53 @@
     </section>
 
     <section class="card">
-      <h3>8) Servis Dağılımı ve Rol Tablosu</h3>
+      <h3>9) Servis Dağılımı ve Rol Tablosu</h3>
       <table class="compare-table">
         <thead>
           <tr>
             <th>Bileşen</th>
             <th>Container</th>
-            <th>Dağıtım</th>
-            <th>Ana Port / UI</th>
             <th>Görev</th>
+            <th>Öne Çıkan Özellik</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>Hadoop HDFS</td>
-            <td>namenode, datanode-1, datanode-2</td>
-            <td>1 + 2</td>
-            <td>9870, 9864, 9865</td>
-            <td>Dağıtık depolama ve replikasyon</td>
-          </tr>
-          <tr>
-            <td>Hive</td>
-            <td>hive-metastore, hive-server2, postgres</td>
-            <td>2 + DB</td>
-            <td>9083, 10000, 5432</td>
-            <td>Metadata, SQL erişimi ve şema yönetimi</td>
+            <td>namenode, datanode-1, 2</td>
+            <td>Sınırsız Depolama</td>
+            <td>Reliability (Replication)</td>
           </tr>
           <tr>
             <td>Kafka</td>
             <td>kafka-broker</td>
-            <td>1 (KRaft)</td>
-            <td>9092</td>
-            <td>Yüksek hacimli log ingestion buffer'ı</td>
+            <td>Event Streaming</td>
+            <td>Low Latency (Zero-Copy)</td>
           </tr>
           <tr>
             <td>Spark</td>
-            <td>spark-master, spark-worker-1, spark-worker-2</td>
-            <td>1 + 2</td>
-            <td>8080, 8081, 8082, 7077</td>
-            <td>Dağıtık stream ETL ve veri zenginleştirme</td>
+            <td>spark-master, worker-1, 2</td>
+            <td>Real-time ETL</td>
+            <td>Performance (Tungsten)</td>
+          </tr>
+          <tr>
+            <td>Hive</td>
+            <td>hive-server2, metastore</td>
+            <td>SQL Catalog</td>
+            <td>Lakehouse Pattern</td>
+          </tr>
+          <tr>
+            <td>Superset</td>
+            <td>superset</td>
+            <td>Threat Hunting</td>
+            <td>Interactive Analysis</td>
           </tr>
         </tbody>
       </table>
     </section>
 
     <section class="card">
-      <h3>9) ETL Mantığı (PySpark)</h3>
+      <h3>10) ETL Mantığı (PySpark)</h3>
       <ul class="presentation-list">
         <li><strong>Kaynak:</strong> Kafka topic aboneliği: web-logs, syslogs, app-logs.</li>
         <li><strong>İşleme:</strong> Regex ile IP, method, path, status; JSON parse ile event/service alanları.</li>
@@ -643,7 +668,7 @@
     </section>
 
     <section class="card">
-      <h3>10) Dağıtık Durum Doğrulama (CLI)</h3>
+      <h3>11) Dağıtık Durum Doğrulama (CLI)</h3>
       <ul class="presentation-list">
         <li><strong>HDFS:</strong> <em>hdfs dfsadmin -report</em> çıktısında Live datanodes (2) görünmeli.</li>
         <li><strong>Kafka:</strong> Topic listesinde web-logs, syslogs, app-logs görünmeli.</li>
@@ -661,7 +686,7 @@ docker exec -it hive-server2 /opt/hive/bin/beeline -u jdbc:hive2://localhost:100
     </section>
 
     <section class="card">
-      <h3>11) Neden Bu Mimari?</h3>
+      <h3>12) Neden Bu Mimari?</h3>
       <ul class="presentation-list">
         <li><strong>Vendor lock-in yok:</strong> Tamamen Apache ekosistemi, markaya veya pahalı lisanslara bağımlılık yok.</li>
         <li><strong>Yatay ölçeklenebilirlik:</strong> Daha çok log geldikçe, sadece yeni Kafka Broker veya yeni Hadoop DataNode eklenir.</li>
@@ -671,7 +696,7 @@ docker exec -it hive-server2 /opt/hive/bin/beeline -u jdbc:hive2://localhost:100
     </section>
 
     <section class="card">
-      <h3>12) Sonraki Adımlar</h3>
+      <h3>13) Sonraki Adımlar</h3>
       <ul class="presentation-list">
         <li>Kafka cluster'ını 3 broker ve topic replication (çoğaltma) ile yüksek erişilebilir hale getirmek.</li>
         <li>Spark işine <em>watermark</em> ve pencereleme fonksiyonları ekleyerek kural tabanlı saldırı tespiti yazdırmak.</li>

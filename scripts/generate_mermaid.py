@@ -53,7 +53,6 @@ SERVICE_LAYER_MAP = {
     "flog-app":         "FLOG",
     "superset":         "VIZ",
     "superset-redis":   "VIZ",
-    "zeppelin":         "VIZ",
 }
 
 # ── Custom Data Flow Edges ────────────────────────────────────────────────
@@ -76,7 +75,6 @@ CUSTOM_EDGES = [
     ('SUP',  'PG',  '-->',  'Superset DB'),
     ('SUP',  'HS2', '-->',  'SQL Query'),
     ('SUP',  'SRED','---',  ''),
-    ('ZEP',  'SM',  '-->',  'Interactive Analysis'),
 ]
 
 
@@ -98,7 +96,6 @@ def safe_node_id(service_name: str) -> str:
         "flog-app":         "FA",
         "superset":         "SUP",
         "superset-redis":   "SRED",
-        "zeppelin":         "ZEP",
     }
     return mapping.get(service_name, service_name.upper().replace("-", "_"))
 
@@ -216,7 +213,7 @@ def generate_mermaid(compose_path: str) -> str:
     # Style each subgraph
     for layer_key, layer_def in LAYER_DEFINITIONS.items():
         color = layer_def["color"]
-        lines.append(f"    style {layer_key} fill:#2d3436,stroke:{color},color:#dfe6e9")
+        lines.append(f"    style {layer_key} fill:#f8fafc,stroke:{color},color:#0f172a")
 
     return "\n".join(lines)
 

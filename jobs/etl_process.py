@@ -78,30 +78,53 @@ def extract_attributes(logs_df: DataFrame) -> DataFrame:
     """
     Applies regex and JSON parsing to extract structured columns from the raw log stream.
 
+    Log formats produced by flog:
+      - web   (apache_common):   IP - - [timestamp] "METHOD path HTTP/1.x" STATUS BYTES
+      - syslog (rfc5424):        MONTH DAY HH:MM:SS HOST PROG[PID]: MSG
+      - json  (apache_combined): flog outputs apache_combined as JSON with field names:
+                                  host, user-identifier, authuser, datetime,
+                                  request, status, bytes, referer, agent
+
     :param logs_df: The raw streaming DataFrame from Kafka
     :return: A parsed DataFrame with expanded columns
     """
-    # JSON schema for app-logs
+    # JSON schema matching flog's apache_combined JSON output
     json_schema = StructType(
         [
-            StructField("event", StringType(), True),
-            StructField("service", StringType(), True),
-            StructField("message", StringType(), True),
+            StructField("host", StringType(), True),
+            StructField("user-identifier", StringType(), True),
+            StructField("authuser", StringType(), True),
+            StructField("datetime", StringType(), True),
+            StructField("request", StringType(), True),
+            StructField("status", StringType(), True),
+            StructField("bytes", StringType(), True),
+            StructField("referer", StringType(), True),
+            StructField("agent", StringType(), True),
         ]
     )
 
     json_parsed = from_json(col("raw_log"), json_schema)
 
     parsed_df = (
-        logs_df.withColumn("client_ip", regexp_extract("raw_log", r"^(\\S+)", 1))
-        .withColumn("http_method", regexp_extract("raw_log", r'"(GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD)', 1))
-        .withColumn("request_path", regexp_extract("raw_log", r'"(?:GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD)\\s+([^\\s]+)', 1))
-        .withColumn("status_code", regexp_extract("raw_log", r'"\\s(\\d{3})\\s', 1))
-        .withColumn("bytes_sent", regexp_extract("raw_log", r'\\s(\\d+)$', 1))
-        .withColumn("syslog_host", regexp_extract("raw_log", r"^\\w{3}\\s+\\d+\\s+\\d+:\\d+:\\d+\\s+(\\S+)", 1))
-        .withColumn("syslog_program", regexp_extract("raw_log", r"\\s([A-Za-z0-9_.-]+)(?:\\[\\d+\\])?:", 1))
-        .withColumn("app_event", json_parsed.getField("event"))
-        .withColumn("app_service", json_parsed.getField("service"))
+        logs_df
+        # ── Web log fields (apache_common: IP - - [ts] "METHOD /path HTTP/x" STATUS BYTES) ──
+        .withColumn("client_ip",    regexp_extract("raw_log", r'^(\S+)', 1))
+        .withColumn("http_method",  regexp_extract("raw_log", r'"(GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD)\s', 1))
+        .withColumn("request_path", regexp_extract("raw_log", r'"(?:GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD)\s+(\S+)', 1))
+        # status code sits right after the closing-quote + space
+        .withColumn("status_code",  regexp_extract("raw_log", r'"\s+(\d{3})\s+', 1))
+        # bytes can be a number or '-' (empty body) — capture only digits
+        .withColumn("bytes_sent",   regexp_extract("raw_log", r'"\s+\d{3}\s+(\d+)', 1))
+
+        # ── Syslog fields (rfc5424: "MMM D HH:MM:SS host prog[pid]: msg") ──
+        .withColumn("syslog_host",    regexp_extract("raw_log", r'^\w{3}\s+\d+\s+\d+:\d+:\d+\s+(\S+)', 1))
+        .withColumn("syslog_program", regexp_extract("raw_log", r'\s([A-Za-z0-9_.\-]+)(?:\[\d+\])?:', 1))
+
+        # ── App-log fields (flog apache_combined JSON) ──
+        .withColumn("app_event",   json_parsed.getField("status"))
+        .withColumn("app_service", json_parsed.getField("request"))
+
+        # ── Ingest timestamps ──
         .withColumn(
             "ingest_ts",
             when(col("kafka_ts").isNotNull(), col("kafka_ts")).otherwise(current_timestamp()),

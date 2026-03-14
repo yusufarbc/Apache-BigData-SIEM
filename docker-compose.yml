@@ -57,8 +57,7 @@ volumes:
   kafka-data:
   hive-warehouse:
   superset_data:
-  zeppelin_data:
-  zeppelin_notebooks:
+
 
 # ══════════════════════════════════════════════════════════════
 # Services
@@ -311,7 +310,7 @@ services:
       /bin/bash -c "
       /opt/bitnami/scripts/spark/run.sh &
       sleep 10 &&
-      /opt/bitnami/spark/sbin/start-thriftserver.sh --master spark://spark-master:7077 --hiveconf hive.server2.thrift.port=10000 &&
+      /opt/bitnami/spark/sbin/start-thriftserver.sh --master spark://spark-master:7077 --hiveconf hive.server2.thrift.port=10000 --conf spark.cores.max=2 &&
       wait
       "
     depends_on:
@@ -372,6 +371,45 @@ services:
         limits:
           memory: 3G
           cpus: "2.0"
+
+  # ─────────────────────────────────────────────────────────
+  # Spark ETL — Auto-submit Streaming Job
+  # ─────────────────────────────────────────────────────────
+
+  spark-etl:
+    <<: *spark-common
+    container_name: spark-etl
+    restart: on-failure
+    environment:
+      SPARK_MODE: ""
+      SPARK_CONF_DIR: /opt/bitnami/spark/conf
+      HOME: /tmp
+    depends_on:
+      spark-master:
+        condition: service_healthy
+      spark-worker-1:
+        condition: service_started
+      spark-worker-2:
+        condition: service_started
+      kafka-broker:
+        condition: service_healthy
+    volumes:
+      - ./config/spark/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf:ro
+      - ./config/hadoop/core-site.xml:/opt/bitnami/spark/conf/core-site.xml:ro
+      - ./config/hadoop/hdfs-site.xml:/opt/bitnami/spark/conf/hdfs-site.xml:ro
+      - ./config/hive/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml:ro
+      - ./jobs:/opt/bitnami/spark/jobs
+    command: >
+      spark-submit
+        --master spark://spark-master:7077
+        --conf spark.jars.ivy=/tmp/.ivy2
+        --conf spark.cores.max=2
+        --conf spark.executor.memory=1g
+        /opt/bitnami/spark/jobs/etl_process.py
+    deploy:
+      resources:
+        limits:
+          memory: 1G
 
   # ─────────────────────────────────────────────────────────
   # Flog — Log Generators
@@ -473,36 +511,4 @@ services:
         limits:
           memory: 2G
 
-  # ─────────────────────────────────────────────────────────
-  # Zeppelin — Interactive Notebooks
-  # ─────────────────────────────────────────────────────────
 
-  zeppelin:
-    image: apache/zeppelin:0.11.1
-    container_name: zeppelin
-    restart: unless-stopped
-    depends_on:
-      spark-master:
-        condition: service_healthy
-    environment:
-      - SPARK_MASTER=spark://spark-master:7077
-      - MASTER=spark://spark-master:7077
-      - ZEPPELIN_PORT=8080
-      - ZEPPELIN_JAVA_OPTS=-Dspark.driver.memory=1g -Dspark.executor.memory=1g
-    ports:
-      - "8090:8080"
-    networks:
-      - siem-network
-    volumes:
-      - zeppelin_data:/zeppelin/logs
-      - zeppelin_notebooks:/zeppelin/notebook
-      - ./scripts:/zeppelin/scripts:ro
-      - ./config/spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
-      - ./config/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
-      - ./config/hadoop/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
-      - ./config/hive/hive-site.xml:/opt/hive/conf/hive-site.xml:ro
-    command: ["bash", "/zeppelin/scripts/zeppelin_init.sh"]
-    deploy:
-      resources:
-        limits:
-          memory: 2G
