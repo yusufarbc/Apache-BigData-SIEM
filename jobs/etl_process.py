@@ -24,7 +24,7 @@ from detection_rules import initialize_alerts_table, evaluate_rules
 
 # Configuration Constants
 KAFKA_BOOTSTRAP = "kafka-broker:9092"
-KAFKA_TOPICS = "web-logs,syslogs,app-logs"
+KAFKA_TOPICS = "web-logs,syslogs,app-logs,win-event-logs"
 CHECKPOINT_PATH = "hdfs://namenode:8020/tmp/checkpoints/siem_logs_parsed"
 HIVE_TABLE_LOCATION = "hdfs://namenode:8020/user/hive/warehouse/siem.db/logs_parsed"
 
@@ -123,6 +123,14 @@ def extract_attributes(logs_df: DataFrame) -> DataFrame:
         # ── App-log fields (flog apache_combined JSON) ──
         .withColumn("app_event",   json_parsed.getField("status"))
         .withColumn("app_service", json_parsed.getField("request"))
+
+        # ── Windows Event Log fields (Simulated via Syslog format) ──
+        # Format: host source[id]: message
+        .withColumn(
+            "app_event",
+            when(col("source_topic") == "win-event-logs", regexp_extract("raw_log", r'\s([A-Za-z0-9\-]+)(?:\[\d+\])?:', 1))
+            .otherwise(col("app_event"))
+        )
 
         # ── Ingest timestamps ──
         .withColumn(

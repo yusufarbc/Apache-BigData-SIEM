@@ -460,6 +460,21 @@ services:
       spark-worker-2:
         condition: service_started
 
+  flog-winevent:
+    <<: *flog-common
+    container_name: flog-winevent
+    environment:
+      <<: *flog-env
+      KAFKA_TOPIC: win-event-logs
+      LOG_PROFILE: winevent
+    depends_on:
+      kafka-broker:
+        condition: service_healthy
+      spark-worker-1:
+        condition: service_started
+      spark-worker-2:
+        condition: service_started
+
   # ─────────────────────────────────────────────────────────
   # Superset — Analytics & Dashboards
   # ─────────────────────────────────────────────────────────

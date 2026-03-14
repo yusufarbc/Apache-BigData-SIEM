@@ -18,6 +18,9 @@ build_flog_command() {
     json)
       echo "flog -f apache_combined -o json -n ${BATCH_SIZE}"
       ;;
+    winevent)
+      echo "flog -f rfc5424 -n ${BATCH_SIZE}"
+      ;;
     *)
       echo "flog -f apache_common -n ${BATCH_SIZE}"
       ;;
