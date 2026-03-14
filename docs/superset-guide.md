@@ -30,11 +30,29 @@ hive://spark-master:10000/siem
 
 ---
 
-## 2. SQL Lab — Query Examples
+## 2. PostgreSQL Connection (Metadata & Auditing)
+
+While the log data resides in Hive, the metadata and some state information are stored in PostgreSQL. You can connect to it for auditing or monitoring the platform's health.
+
+### Steps
+
+1. Go to **Settings → Database Connections → + Database**
+2. Select **PostgreSQL**
+3. Enter the connection URI:
+
+```
+postgresql://hive_user:hive_password@postgres:5432/metastore_db
+```
+
+4. Click **Test Connection** → **Save**
+
+---
+
+## 3. SQL Lab — Query Examples
 
 Navigate to **SQL Lab → SQL Editor**, select the `siem` database.
 
-### 2.1 Basic Visibility
+### 3.1 Basic Visibility
 
 ```sql
 -- Preview latest 20 logs
@@ -51,7 +69,7 @@ GROUP BY source_topic
 ORDER BY event_count DESC;
 ```
 
-### 2.2 Web Security (web-logs)
+### 3.2 Web Security (web-logs)
 
 ```sql
 -- Top attacking IPs (4xx errors)
@@ -104,7 +122,7 @@ ORDER BY hit_count DESC
 LIMIT 20;
 ```
 
-### 2.3 System Auditing (syslogs)
+### 3.3 System Auditing (syslogs)
 
 ```sql
 -- Failed authentication events per host
@@ -134,7 +152,7 @@ ORDER BY activity_count DESC
 LIMIT 15;
 ```
 
-### 2.4 Application Monitoring (app-logs)
+### 3.4 Application Monitoring (app-logs)
 
 ```sql
 -- HTTP status code distribution from app-logs JSON
@@ -161,7 +179,7 @@ ORDER BY hit_count DESC
 LIMIT 20;
 ```
 
-### 2.5 Time-Series Analysis
+### 3.5 Time-Series Analysis
 
 ```sql
 -- Hourly event volume (last 24h)
@@ -186,53 +204,80 @@ GROUP BY ingest_date
 ORDER BY ingest_date DESC;
 ```
 
----
+## 4. Dashboard Building
 
-## 3. Dashboard Building
+### 4.1 Creating Your First Dashboard
 
-### Recommended SOC Dashboard Panels
+1. **New Dashboard**: Navigate to **Dashboards → + Dashboard**.
+2. **Chart Integration**:
+   - On the right sidebar, click **Charts**.
+   - Drag and drop your saved charts (e.g., "Event Volume Trend") onto the canvas.
+3. **Layout Customization**:
+   - Use **Rows** and **Columns** to organize panels.
+   - Use **Markdown** components to add headers like "Web Security Overview" or "System Health".
+4. **Auto-Refresh**: Click the **...** (three dots) in the top-right corner → **Set auto-refresh interval** → Choose **10 seconds** or **1 minute** for real-time monitoring.
 
-| Panel | Chart Type | Query Basis |
-|-------|-----------|-------------|
-| **Total Events (24h)** | Big Number | Count with `ingest_date >= CURRENT_DATE - 1` |
-| **Events per Topic** | Pie Chart | `GROUP BY source_topic` |
-| **Top Attacking IPs** | Bar Chart | 4xx errors `GROUP BY client_ip` |
-| **Hourly Event Trend** | Line Chart | `GROUP BY hour_bucket, source_topic` |
-| **HTTP Method Distribution** | Donut Chart | `GROUP BY http_method` |
-| **Auth Failure by Host** | Bar Chart | syslog failed auth `GROUP BY syslog_host` |
-| **Status Code Heatmap** | Heatmap | `GROUP BY status_code, ingest_date` |
+### 4.2 Key SIEM Visualization Patterns
 
-### Creating a Chart
-
-1. **SQL Lab** → Run your query → **Explore** button
-2. Choose a chart type (e.g., **Bar Chart**, **Line Chart**)
-3. Set **Metrics** and **Dimensions** from your query columns
-4. **Save** and add to a dashboard
-
-### Creating a Dashboard
-
-1. **Dashboards → + Dashboard**
-2. Click **Edit Dashboard** → drag saved charts onto the canvas
-3. Set **Auto-refresh** (e.g., every 10 minutes) for live SOC monitoring
-4. Save and share
+| Security Goal | Recommended Chart | Config Detail |
+|---------------|-------------------|---------------|
+| **Brute Force Detection** | Bar Chart | `count` on Y-axis, `client_ip` on X-axis, filter by `status_code = 401`. |
+| **System Health** | Indicator (Big Number) | `count(*)` of events in the last 5 minutes. |
+| **Anomaly Detection** | Line Chart | Hourly event volume with a 7-day comparison (Advanced Analytics). |
+| **DDoS Awareness** | Area Chart | Events per second (EPS) trend. |
 
 ---
 
-## 4. Alerts & Reports (Optional)
+## 5. Alerts & Reports (SIEM Rules)
 
-Superset supports scheduled email/Slack alerts:
+Superset can act as a rudimentary alerting engine by running SQL queries on a schedule.
 
-1. **Settings → Alerts & Reports**
-2. Define a **SQL condition** (e.g., brute-force threshold exceeded)
-3. Configure **schedule** and **notification channel**
+### 5.1 Prerequisites
+Ensure the Superset Celery worker and beat are running (included in `docker-compose.yml`).
+
+### 5.2 Setting up a SIEM Alert (e.g., High Error Threshold)
+
+1. **Create Alert**: Go to **Settings → Alerts & Reports → + Alert**.
+2. **Setup**:
+   - **Name**: `CRITICAL: Web High Error Rate`
+   - **Database**: `siem`
+   - **SQL Query**: 
+     ```sql
+     SELECT COUNT(*) as err_count 
+     FROM siem.logs_parsed 
+     WHERE status_code >= '500' 
+       AND ingest_ts > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+     ```
+   - **Alert Condition**: Trigger if `err_count > 50`.
+3. **Delivery**: Choose **Slack** or **Email** and provide the destination.
+4. **Schedule**: Set to run every **5 minutes**.
 
 ---
 
-## 5. Troubleshooting
+## 6. SOC Analyst Workflow (Example)
+
+How to use these tools in a real incident response:
+
+1. **Detection**: An alert triggers in Slack: `CRITICAL: Web High Error Rate`.
+2. **Triage**: The analyst opens the **SIEM Main Dashboard** in Superset.
+3. **Investigation**:
+   - They see a spike in 4xx errors from a specific IP.
+   - They jump to **SQL Lab** and run:
+     ```sql
+     SELECT request_path, user_agent 
+     FROM siem.logs_parsed 
+     WHERE client_ip = 'XYZ' AND status_code = '404'
+     ```
+   - They identify a directory traversal attack pattern (`../../etc/passwd`).
+4. **Resolution**: The IP is blocked at the firewall, and the alert is cleared.
+
+---
+
+## 7. Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
 | Connection refused on port 10000 | Ensure `spark-master` is healthy and the Thrift Server started: `docker logs spark-master \| grep ThriftServer` |
-| `Table not found: siem.logs_parsed` | Run the ETL job first: `make run-job` |
+| `Table not found: siem.logs_parsed` | Run the ETL job first: The `spark-etl` service should handle this automatically. |
 | Query timeout | Reduce date range or add `LIMIT` clause |
-| Empty results | Verify Kafka producers are running: `docker compose ps flog-web flog-syslog flog-app` |
+| Empty results | Verify Kafka producers are running: `docker compose ps` |
