@@ -357,7 +357,7 @@
   </style>
 </head>
 <body>
-  <div class="progress" id="progress">Slide 1 / 13</div>
+  <div class="progress" id="progress">Slide 1 / 15</div>
 
   <div class="page" id="slides">
     <header class="hero">
@@ -494,7 +494,7 @@
 
     <!-- SUPERSET -->
     <section class="card">
-      <h3>6) Görselleştirme: Apache Superset</h3>
+      <h3>6) Görselleştirme: Apache Superset & Alerting</h3>
       <div class="tech-grid">
         <div class="tech-desc">
           <p><strong>Apache Superset</strong>, kurumsal düzeyde bir veri görselleştirme ve BI (Business Intelligence) platformudur.</p>
@@ -502,7 +502,7 @@
           <ul class="presentation-list" style="padding-left:0;">
             <li><strong>SQL Lab:</strong> Hive üzerindeki petabaytlarca log verisini doğrudan tarayıcıdan SQL ile sorgula.</li>
             <li><strong>Dashboard:</strong> Grafik, tablo, harita gibi görsel bileşenlerle SOC paneli oluştur.</li>
-            <li><strong>Bağlantı:</strong> Spark Thrift Server (port 10000) üzerinden Hive'a JDBC ile bağlanır.</li>
+            <li><strong>Oto-Senkronizasyon:</strong> Yeni tablolar ve sütunlar (`ingest_ts`, `source_topic`) anlık olarak indekslenir.</li>
           </ul>
         </div>
         <div>
@@ -517,8 +517,40 @@
       </div>
     </section>
 
+    <!-- NEW SOC DASHBOARD SLIDE -->
     <section class="card">
-      <h3>7) Proje Akış Mimarisi</h3>
+      <h3>7) SIEM SOC Overview: Canlı İzleme</h3>
+      <div class="tech-grid">
+        <div class="tech-desc">
+          <p>Platformumuz, kurulduğu anda <strong>6 farklı kritik güvenlik metriğini</strong> içeren tam teşekküllü bir SOC Dashboard'u ile birlikte gelir:</p>
+          <ul class="presentation-list" style="padding-left:0;">
+            <li><strong>Hacim Ölçümü:</strong> Toplam işlenen log sayısı ve anlık trafik yoğunluğu.</li>
+            <li><strong>Saldırı Analitiği:</strong> Benzersiz saldırgan IP sayıları ve hedef alınan servisler.</li>
+            <li><strong>Zaman Serisi:</strong> Dakikalık bazda log akış trendi (Events Over Time).</li>
+            <li><strong>Canlı Akış:</strong> En son gelen 50 logun tüm detaylarıyla (IP, Method, Path, OS) tablolandığı canlı panel.</li>
+          </ul>
+        </div>
+        <div style="background: #0f172a; border-radius: 12px; padding: 15px; border: 2px solid #334155;">
+           <!-- Mock Dashboard Layout -->
+           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+             <div style="background: #1e293b; height: 40px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 12px; font-weight: bold;">TOTAL: 1.2M</div>
+             <div style="background: #1e293b; height: 40px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #f43f5e; font-size: 12px; font-weight: bold;">ATTACKERS: 142</div>
+             <div style="background: #1e293b; grid-column: span 2; height: 60px; border-radius: 4px; position: relative; overflow: hidden;">
+               <svg viewBox="0 0 200 60" style="width: 100%; height: 100%;">
+                 <path d="M0 50 Q50 20 80 40 T150 10 T200 30 L200 60 L200 60 L0 60 Z" fill="rgba(56, 189, 248, 0.2)" stroke="#38bdf8" stroke-width="2" />
+               </svg>
+             </div>
+             <div style="background: #1e293b; height: 50px; border-radius: 4px;"></div>
+             <div style="background: #1e293b; height: 50px; border-radius: 4px;"></div>
+           </div>
+           <p style="color: #94a3b8; font-size: 12px; margin-top: 10px; text-align: center;">Uçtan Uca Otomatik SOC Paneli</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ARCHITECTURE FLOW -->
+    <section class="card">
+      <h3>8) Proje Akış Mimarisi</h3>
       <p class="presentation-title">Uçtan uca veri yolculuğu (Data Pipeline)</p>
       
       <div style="text-align: center; margin-top: 1rem; height: 100%; display: flex; justify-content: center; align-items: center;">
@@ -537,35 +569,108 @@
                 P1("flog-web"):::producer
                 P2("flog-syslog"):::producer
                 P3("flog-app"):::producer
+                P4("flog-winevent"):::producer
             end
 
             K1("2. Apache Kafka<br/>(Event Streaming & Buffer)"):::buffer
 
-            S1("3. Apache Spark<br/>(Gerçek Zamanlı ETL)"):::etl
+            S1("3. Apache Spark<br/>(ETL & SQL Engine)"):::etl
 
             subgraph StorageCatalog ["4. Lakehouse (Depolama & Sorgu)"]
                 direction LR
                 HDFS("HDFS (Parquet)"):::storage
-                HIVE("Apache Hive (SQL)"):::catalog
+                HIVE("Hive Metastore"):::catalog
             end
 
-            %% Flow (Ters C şekli yaratmak için)
-            P1 --> K1
-            P2 --> K1
-            P3 --> K1
+            DB[("Postgres<br/>(Metadata DB)")]:::buffer
+            SUP("5. Apache Superset<br/>(Dashboard & Alerting)"):::buffer
+
+            %% Flow
+            P1 & P2 & P3 & P4 --> K1
             
             K1 ==>|"Consume"| S1
             
-            S1 ==>|"Append (Parquet)"| HDFS
-            S1 -.->|"Update Metadata"| HIVE
+            S1 ==>|"Write Parquet"| HDFS
+            S1 -.->|"Update Schema"| HIVE
+            HIVE -.->|"Warehouse"| HDFS
             
-            HDFS <==>|"JDBC / SQL Interface"| HIVE
+            SUP ==>|"Interactive SQL"| S1
+            S1 <-->|"Get Schema"| HIVE
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="justify-content: center; padding: 0;">
+      <div style="text-align: center; width: 100%; height: 100vh; display: flex; justify-content: center; align-items: center;">
+        <div class="mermaid" style="background: white; border-radius: 0; border: none; box-shadow: none; padding: 20px; width: 100%; height: 100%; max-width: 100vw; font-size: 16px;">
+        graph TD
+            subgraph FLOG["📡 Log Generators (Flog)"]
+                FW["Flog Web<br/><i>web-logs</i>"]
+                FS["Flog Syslog<br/><i>syslogs</i>"]
+                FA["Flog App<br/><i>app-logs</i>"]
+                FE["Flog WinEvent<br/><i>win-event-logs</i>"]
+            end
+
+            subgraph KAFKA["📨 Messaging Layer"]
+                KB["Kafka Broker<br/><b>KRaft Mode</b><br/>:9092"]
+            end
+
+            subgraph SPARK["⚙️ Processing Layer (Spark)"]
+                SM["Spark Master<br/>:8080 · :7077 · :10000"]
+                SW1["Spark Worker 1<br/>2G RAM · 2 Cores<br/>:8081"]
+                SW2["Spark Worker 2<br/>2G RAM · 2 Cores<br/>:8082"]
+            end
+
+            subgraph HIVE["🗂️ Data Cataloging (Hive)"]
+                HM["Hive Metastore<br/>:9083"]
+                HS2["Hive Server2<br/>:10001 · :10002"]
+            end
+
+            subgraph HDFS["💾 Distributed Storage (HDFS)"]
+                NN["Namenode<br/>:9870 · :8020"]
+                DN1["Datanode 1"]
+                DN2["Datanode 2"]
+            end
+
+            subgraph DB["🗄️ Unified Database"]
+                PG[("Postgres")]
+            end
+
+            subgraph VIZ["📊 Analytics & Visualization"]
+                SRED["Superset Redis"]
+                SUP["Superset<br/>:8088"]
+            end
+
+            FW -->|"web-logs"| KB
+            FS -->|"syslogs"| KB
+            FA -->|"app-logs"| KB
+            FE -->|"win-event-logs"| KB
+            KB -->|"Stream Consume"| SM
+            SM --- SW1
+            SM --- SW2
+            SM -->|"Parquet Write"| NN
+            NN --- DN1
+            NN --- DN2
+            HM -->|"Metadata DB"| PG
+            SM -.->|"Schema Registry"| HM
+            HM -.->|"Warehouse location"| NN
+            SUP -->|"SQL Query"| SM
+            SM ==>|"Data Read (Parquet)"| NN
+            SUP -->|"Superset DB"| PG
+            SUP --- SRED
+
+            style FLOG fill:#f8fafc,stroke:#00b894,color:#0f172a
+            style KAFKA fill:#f8fafc,stroke:#e17055,color:#0f172a
+            style SPARK fill:#f8fafc,stroke:#fdcb6e,color:#0f172a
+            style HIVE fill:#f8fafc,stroke:#74b9ff,color:#0f172a
+            style HDFS fill:#f8fafc,stroke:#a29bfe,color:#0f172a
+            style DB fill:#f8fafc,stroke:#636e72,color:#0f172a
         </div>
       </div>
     </section>
 
     <section class="card">
-      <h3>8) Mikroservis & Konteyner Mimarisi</h3>
+      <h3>10) Mikroservis & Konteyner Mimarisi</h3>
       <div class="tech-grid">
         <div class="tech-desc">
           <p>Big Data platformumuz devasa bir <strong>monolit yapı değildir.</strong> Her bir Apache bileşeni birbirinden tamamen izole edilmiş, kendi yaşam döngüsü olan Docker konteynerleri (Mikroservisler) olarak çalışır.</p>
@@ -600,7 +705,7 @@
     </section>
 
     <section class="card">
-      <h3>9) Servis Dağılımı ve Rol Tablosu</h3>
+      <h3>11) Servis Dağılımı ve Rol Tablosu</h3>
       <table class="compare-table">
         <thead>
           <tr>
@@ -611,6 +716,12 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td>Producers</td>
+            <td>flog (x4)</td>
+            <td>Log Üretimi</td>
+            <td>WinEvent + Web + Sys + App</td>
+          </tr>
           <tr>
             <td>Hadoop HDFS</td>
             <td>namenode, datanode-1, 2</td>
@@ -638,7 +749,7 @@
           <tr>
             <td>Superset</td>
             <td>superset</td>
-            <td>Threat Hunting</td>
+            <td>SOC Dashboard</td>
             <td>Interactive Analysis</td>
           </tr>
         </tbody>
@@ -646,15 +757,15 @@
     </section>
 
     <section class="card">
-      <h3>10) ETL Mantığı (PySpark)</h3>
+      <h3>12) ETL Mantığı (PySpark)</h3>
       <ul class="presentation-list">
-        <li><strong>Kaynak:</strong> Kafka topic aboneliği: web-logs, syslogs, app-logs.</li>
+        <li><strong>Kaynak:</strong> Kafka topic aboneliği: web-logs, syslogs, app-logs, win-event-logs.</li>
         <li><strong>İşleme:</strong> Regex ile IP, method, path, status; JSON parse ile event/service alanları.</li>
         <li><strong>Hedef:</strong> Hive tablosu <strong>siem.logs_parsed</strong> ve Parquet formatında kalıcı kayıt.</li>
       </ul>
       <pre class="code-block">spark.readStream.format("kafka")
   .option("kafka.bootstrap.servers", "kafka-broker:9092")
-  .option("subscribe", "web-logs,syslogs,app-logs")
+  .option("subscribe", "web-logs,syslogs,app-logs,win-event-logs")
   .load()
   
   # RegExp & JSON field Extraction
@@ -668,10 +779,10 @@
     </section>
 
     <section class="card">
-      <h3>11) Dağıtık Durum Doğrulama (CLI)</h3>
+      <h3>13) Dağıtık Durum Doğrulama (CLI)</h3>
       <ul class="presentation-list">
         <li><strong>HDFS:</strong> <em>hdfs dfsadmin -report</em> çıktısında Live datanodes (2) görünmeli.</li>
-        <li><strong>Kafka:</strong> Topic listesinde web-logs, syslogs, app-logs görünmeli.</li>
+        <li><strong>Kafka:</strong> 4 farklı topic (WinEvent dahil) listede görünmeli.</li>
         <li><strong>Hive:</strong> Beeline (JDBC) ile sorgular veri dönmeli.</li>
       </ul>
       <pre class="code-block" style="font-size:1.1rem"># Hadoop doğrulama
@@ -686,7 +797,7 @@ docker exec -it hive-server2 /opt/hive/bin/beeline -u jdbc:hive2://localhost:100
     </section>
 
     <section class="card">
-      <h3>12) Neden Bu Mimari?</h3>
+      <h3>14) Neden Bu Mimari?</h3>
       <ul class="presentation-list">
         <li><strong>Vendor lock-in yok:</strong> Tamamen Apache ekosistemi, markaya veya pahalı lisanslara bağımlılık yok.</li>
         <li><strong>Yatay ölçeklenebilirlik:</strong> Daha çok log geldikçe, sadece yeni Kafka Broker veya yeni Hadoop DataNode eklenir.</li>
@@ -696,12 +807,12 @@ docker exec -it hive-server2 /opt/hive/bin/beeline -u jdbc:hive2://localhost:100
     </section>
 
     <section class="card">
-      <h3>13) Sonraki Adımlar</h3>
+      <h3>15) Sonraki Adımlar & Gelişim</h3>
       <ul class="presentation-list">
         <li>Kafka cluster'ını 3 broker ve topic replication (çoğaltma) ile yüksek erişilebilir hale getirmek.</li>
         <li>Spark işine <em>watermark</em> ve pencereleme fonksiyonları ekleyerek kural tabanlı saldırı tespiti yazdırmak.</li>
         <li>Hive tablolarını yıllık/aylık/günlük (partitioning) stratejisiyle fiziksel olarak optimize etmek.</li>
-        <li>Apache Superset gibi bir BI aracı bağlayarak <strong>SOC (Security Operations Center) Dashboardları</strong> çizdirmek.</li>
+        <li><strong>ML Ops:</strong> Makine öğrenmesi modelleri ekleyerek "Anomali Tespiti" (Unsupervised Learning) yapmak.</li>
       </ul>
       <p class="presentation-title" style="margin-top:2rem">Kapanış</p>
       <ul class="presentation-list">
@@ -710,9 +821,7 @@ docker exec -it hive-server2 /opt/hive/bin/beeline -u jdbc:hive2://localhost:100
     </section>
   </div>
 
-  <div class="note">
-    Sunum kontrolü: Mouse wheel, touchpad veya ok tuşları ile slaytlar arasında geçiş yapabilirsin.
-  </div>
+
 
   <script>
     const sections = Array.from(document.querySelectorAll('.hero, .card'));
