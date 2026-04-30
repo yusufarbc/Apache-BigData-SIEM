@@ -180,6 +180,7 @@ services:
     environment:
       SERVICE_NAME: metastore
       DB_DRIVER: postgres
+      IS_RESUME: "true"
       SERVICE_OPTS: >-
         -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
         -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://postgres:5432/metastore
@@ -525,5 +526,25 @@ services:
       resources:
         limits:
           memory: 2G
+
+  # ─────────────────────────────────────────────────────────
+  # RStudio — Data Analysis with Sparklyr
+  # ─────────────────────────────────────────────────────────
+
+  rstudio:
+    build: ./docker/rstudio
+    container_name: rstudio
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    environment:
+      - PASSWORD=admin123
+    volumes:
+      - ./rstudio-data:/home/rstudio
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    networks:
+      - siem-network
 
 

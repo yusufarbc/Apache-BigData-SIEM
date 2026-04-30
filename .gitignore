@@ -179,3 +179,22 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# SIEM Stack Data
+rstudio-data/
+superset_data/
+datanode-*-data/
+namenode-data/
+postgres-data/
+kafka-data/
+hive-warehouse/
+.local/
+.cache/
+
+# R/RStudio
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+.Rapp.history
+.Rcommon
