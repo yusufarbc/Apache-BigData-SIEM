@@ -3,10 +3,33 @@ set -e
 
 echo "Installing system dependencies for sasl..."
 export DEBIAN_FRONTEND=noninteractive
-apt-get update && apt-get install -y build-essential libsasl2-dev python3-dev libsasl2-modules-gssapi-mit netcat-openbsd
+apt-get update
+
+# Install core build dependencies (use conditionals so script can continue
+# in minimal images, but warn if something fails)
+if ! apt-get install -y --no-install-recommends \
+     build-essential libsasl2-dev python3-dev libsasl2-modules-gssapi-mit; then
+  echo "Warning: some core packages failed to install; pip builds may fail"
+fi
+
+# Try multiple netcat package names to be robust across images
+if apt-get install -y --no-install-recommends netcat-openbsd; then
+  echo "netcat-openbsd installed"
+else
+  echo "netcat-openbsd not available; trying alternatives"
+  if apt-get install -y --no-install-recommends netcat-traditional; then
+    echo "netcat-traditional installed"
+  else
+    if apt-get install -y --no-install-recommends netcat; then
+      echo "netcat installed"
+    else
+      echo "Warning: netcat not installed; port checks may not work"
+    fi
+  fi
+fi
 
 echo "Installing database drivers..."
-pip install pyhive thrift sasl thrift_sasl 2>/dev/null || true
+pip install pyhive thrift sasl thrift_sasl || true
 
 echo "Waiting for PostgreSQL to be ready..."
 # Wait for unified postgres (hosts both metastore and superset DBs)
