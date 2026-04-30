@@ -25,7 +25,6 @@ graph TD
         FW["Flog Web<br/><i>web-logs</i>"]
         FS["Flog Syslog<br/><i>syslogs</i>"]
         FA["Flog App<br/><i>app-logs</i>"]
-        FE["Flog WinEvent<br/><i>win-event-logs</i>"]
     end
 
     subgraph KAFKA["📨 Messaging Layer"]
@@ -61,19 +60,17 @@ graph TD
     FW -->|"web-logs"| KB
     FS -->|"syslogs"| KB
     FA -->|"app-logs"| KB
-    FE -->|"win-event-logs"| KB
     KB -->|"Stream Consume"| SM
     SM --- SW1
     SM --- SW2
     SM -->|"Parquet Write"| NN
     NN --- DN1
     NN --- DN2
-    HM -->|"Metadata DB"| PG
-    HM -.->|"Warehouse location"| NN
+    HM -->|"Metadata"| PG
+    HS2 -->|"Thrift"| HM
+    SM -.->|"Schema Registry"| HM
     SUP -->|"Superset DB"| PG
-    SUP ==>|"SQL Query"| SM
-    SM ==>|"Data Read (Parquet)"| NN
-    SM <-->|"Hive Metadata"| HM
+    SUP -->|"SQL Query"| HS2
     SUP --- SRED
 
     style FLOG fill:#f8fafc,stroke:#00b894,color:#0f172a
