@@ -21,20 +21,14 @@ The project implements a modern Lakehouse pattern to ensure data is processed in
 <!-- ARCHITECTURE_DIAGRAM_START -->
 ```mermaid
 graph TD
-    subgraph FLOG["📡 Log Generators (Flog)"]
-        FW["Flog Web<br/><i>web-logs</i>"]
-        FS["Flog Syslog<br/><i>syslogs</i>"]
-        FA["Flog App<br/><i>app-logs</i>"]
-    end
-
     subgraph KAFKA["📨 Messaging Layer"]
         KB["Kafka Broker<br/><b>KRaft Mode</b><br/>:9092"]
     end
 
     subgraph SPARK["⚙️ Processing Layer (Spark)"]
         SM["Spark Master<br/>:8080 · :7077 · :10000"]
-        SW1["Spark Worker 1<br/>2G RAM · 2 Cores<br/>:8081"]
-        SW2["Spark Worker 2<br/>2G RAM · 2 Cores<br/>:8082"]
+        SW1["Spark Worker 1<br/>16G RAM · 8 Cores<br/>:8081"]
+        SW2["Spark Worker 2<br/>16G RAM · 8 Cores<br/>:8082"]
     end
 
     subgraph HIVE["🗂️ Data Cataloging (Hive)"]
