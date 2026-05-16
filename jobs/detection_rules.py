@@ -161,6 +161,40 @@ DETECTION_RULES = [
             HAVING COUNT(*) > 20
         """,
     },
+    {
+        "id": "SIEM-008",
+        "name": "Network Port Scanning",
+        "description": "Single internal/external IP scanning multiple distinct ports",
+        "severity": "HIGH",
+        "query": """
+            SELECT
+                'client_ip' AS matched_field,
+                client_ip AS matched_value,
+                COUNT(DISTINCT dest_port) AS hit_count
+            FROM batch_logs
+            WHERE source_topic = 'real_network_logs'
+              AND dest_port IS NOT NULL
+            GROUP BY client_ip
+            HAVING COUNT(DISTINCT dest_port) > 50
+        """,
+    },
+    {
+        "id": "SIEM-009",
+        "name": "Potential Data Exfiltration",
+        "description": "Large data transfer detected from internal network to external IP",
+        "severity": "CRITICAL",
+        "query": """
+            SELECT
+                'client_ip' AS matched_field,
+                client_ip AS matched_value,
+                SUM(CAST(orig_bytes AS BIGINT)) AS hit_count
+            FROM batch_logs
+            WHERE source_topic = 'real_network_logs'
+              AND country != 'Internal'
+            GROUP BY client_ip
+            HAVING SUM(CAST(orig_bytes AS BIGINT)) > 100000000
+        """,
+    },
 ]
 
 
@@ -180,6 +214,8 @@ def initialize_alerts_table(spark: SparkSession) -> None:
             matched_field STRING,
             matched_value STRING,
             hit_count BIGINT,
+            country STRING,
+            city STRING,
             detected_at TIMESTAMP,
             detect_date DATE
         )
@@ -218,18 +254,24 @@ def evaluate_rules(spark: SparkSession, batch_df: DataFrame, batch_id: int) -> i
                 .withColumn("rule_name", lit(rule["name"]))
                 .withColumn("severity", lit(rule["severity"]))
                 .withColumn("description", lit(rule["description"]))
-                .withColumn("detected_at", current_timestamp())
-                .withColumn("detect_date", to_date(current_timestamp()))
+                # Join with original batch to get country/city for the matched value
+                # (Simple heuristic: take the first one found for that IP)
             )
+            
+            # Simple metadata join
+            metadata = batch_df.select("client_ip", "country", "city").distinct()
+            final_alerts = enriched.join(metadata, enriched.matched_value == metadata.client_ip, "left")
 
             # Select columns in table order
             output_cols = [
                 "rule_id", "rule_name", "severity", "description",
                 "matched_field", "matched_value", "hit_count",
-                "detected_at", "detect_date",
+                "country", "city", "detected_at", "detect_date",
             ]
 
-            enriched.select(*output_cols).write.mode("append").insertInto(
+            final_alerts.withColumn("detected_at", current_timestamp()) \
+                        .withColumn("detect_date", to_date(current_timestamp())) \
+                        .select(*output_cols).write.mode("append").insertInto(
                 "siem.alerts", overwrite=False
             )
 

@@ -1,299 +1,102 @@
 #!/bin/bash
 set -e
 
-echo "Installing system dependencies for sasl..."
-export DEBIAN_FRONTEND=noninteractive
-apt-get update
+echo "Starting Superset Initializer (Clean & Optimized)..."
 
-# Install core build dependencies (use conditionals so script can continue
-# in minimal images, but warn if something fails)
-if ! apt-get install -y --no-install-recommends \
-     build-essential libsasl2-dev python3-dev libsasl2-modules-gssapi-mit; then
-  echo "Warning: some core packages failed to install; pip builds may fail"
-fi
+# Run internal setup via python script for reliability
+python3 - <<EOF
+import json
+from superset.app import create_app
 
-# Try multiple netcat package names to be robust across images
-if apt-get install -y --no-install-recommends netcat-openbsd; then
-  echo "netcat-openbsd installed"
-else
-  echo "netcat-openbsd not available; trying alternatives"
-  if apt-get install -y --no-install-recommends netcat-traditional; then
-    echo "netcat-traditional installed"
-  else
-    if apt-get install -y --no-install-recommends netcat; then
-      echo "netcat installed"
-    else
-      echo "Warning: netcat not installed; port checks may not work"
-    fi
-  fi
-fi
-
-echo "Installing database drivers..."
-pip install pyhive thrift sasl thrift_sasl || true
-
-echo "Waiting for PostgreSQL to be ready..."
-# Wait for unified postgres (hosts both metastore and superset DBs)
-until nc -z postgres 5432; do
-  echo "Postgres is unavailable - sleeping"
-  sleep 1
-done
-
-echo "Setting up Superset metadata..."
-superset db upgrade
-superset fab create-admin \
-              --username admin \
-              --password admin123 \
-              --firstname Admin \
-              --lastname User \
-              --email admin@example.com || true
-
-superset init
-
-echo "Configuring Superset Assets (Datasets, Charts, Dashboards)..."
-python - <<EOF
-try:
-    from superset.app import create_app
+def run_setup():
     app = create_app()
     with app.app_context():
         from superset import db
-        from superset.models.core import Database
-        from superset.connectors.sqla.models import SqlaTable, SqlMetric
-        from superset.models.slice import Slice
         from superset.models.dashboard import Dashboard
-        import json
+        from superset.models.slice import Slice
+        from superset.connectors.sqla.models import SqlaTable, SqlMetric, Database
+        from flask_appbuilder.security.sqla.models import User
+        from sqlalchemy.exc import IntegrityError
 
-        # 1. Spark Connection
-        spark_uri = "hive://spark-master:10000/siem"
-        spark_name = "Spark SIEM"
-        
-        # 2. Postgres Connection
-        pg_uri = "postgresql://hive_user:hive_password@postgres:5432/metastore_db"
-        pg_name = "Postgres Metadata"
+        db.session.rollback()
+        admin = db.session.query(User).filter_by(username='admin').first()
+        spark_db = db.session.query(Database).filter(Database.database_name.ilike('%spark%')).first() or db.session.query(Database).first()
 
-        connections = [
-            {"name": spark_name, "uri": spark_uri},
-            {"name": pg_name, "uri": pg_uri}
+        def get_dataset(name, schema="siem", dttm="ingest_ts"):
+            ds = db.session.query(SqlaTable).filter_by(table_name=name, schema=schema).first()
+            if not ds: ds = db.session.query(SqlaTable).filter_by(table_name=name).first()
+            if not ds:
+                try:
+                    ds = SqlaTable(table_name=name, schema=schema, database_id=spark_db.id)
+                    db.session.add(ds)
+                    db.session.commit()
+                except IntegrityError:
+                    db.session.rollback()
+                    ds = db.session.query(SqlaTable).filter_by(table_name=name).first()
+            if ds:
+                ds.schema, ds.database_id = schema, spark_db.id
+                ds.fetch_metadata()
+                m_names = [m.metric_name for m in ds.metrics]
+                if 'count' not in m_names: db.session.add(SqlMetric(metric_name='count', expression='COUNT(*)', table_id=ds.id))
+                if name == "network_anomalies" and 'avg__anomaly_score' not in m_names:
+                    db.session.add(SqlMetric(metric_name='avg__anomaly_score', expression='AVG(anomaly_score)', table_id=ds.id))
+                for col in ds.columns:
+                    if col.column_name in [dttm, 'ingest_ts', 'event_time', 'ts']: col.is_dttm = True
+                    col.is_active = True
+                ds.main_dttm_col = dttm
+                db.session.commit()
+            return ds
+
+        def get_chart(name, viz, ds, params):
+            slc = db.session.query(Slice).filter_by(slice_name=name).first() or Slice(slice_name=name)
+            slc.viz_type, slc.datasource_type, slc.datasource_id = viz, "table", ds.id
+            slc.params = json.dumps(params)
+            if admin and admin not in slc.owners: slc.owners.append(admin)
+            db.session.add(slc)
+            db.session.commit()
+            return slc
+
+        # Datasets & Charts
+        t_anom = get_dataset("network_anomalies", "siem", "ingest_ts")
+        t_flow = get_dataset("network_flows", "siem", "ingest_ts")
+        t_metrics = get_dataset("model_metrics", "siem", "ingest_ts")
+
+        charts = [
+            get_chart("NDR: Anomaly Count", "big_number_total", t_anom, {"metric": "count"}),
+            get_chart("NDR: Avg Anomaly Score", "big_number_total", t_anom, {"metric": "avg__anomaly_score"}),
+            get_chart("SOC: Normal vs Anomaly", "pie", t_flow, {"groupby": ["is_anomaly"], "metric": "count"}),
+            get_chart("NDR: Anomaly Timeline", "echarts_timeseries_line", t_anom, {"metrics": ["count"], "granularity_sqla": "ingest_ts", "time_grain_sqla": "PT1M"}),
+            get_chart("NDR: Model Stability", "echarts_timeseries_line", t_metrics, {"metrics": ["avg__wssse"], "granularity_sqla": "ingest_ts", "time_grain_sqla": "P1D"}),
+            get_chart("NDR: Top Malicious IPs", "dist_bar", t_anom, {"groupby": ["src_ip"], "metrics": ["count"]}),
+            get_chart("NDR: Protocol Distribution", "pie", t_anom, {"groupby": ["proto"], "metric": "count", "donut": True}),
+            get_chart("NDR: Global Threat Map", "world_map", t_anom, {"entity": "src_ip", "metric": "count"}),
+            get_chart("NDR: Real-time Incident Feed", "table", t_anom, {"all_columns": ["ingest_ts", "src_ip", "dest_ip", "dest_port", "proto", "anomaly_score"], "order_by_cols": [["ingest_ts", False]]}),
+            get_chart("SOC: Traffic Rate", "echarts_timeseries_line", t_flow, {"metrics": ["count"], "granularity_sqla": "ingest_ts", "time_grain_sqla": "PT1M"})
         ]
-        
-        for conn in connections:
-            existing = db.session.query(Database).filter_by(database_name=conn['name']).first()
-            if not existing:
-                print(f"Adding database {conn['name']}...")
-                new_db = Database(database_name=conn['name'], sqlalchemy_uri=conn['uri'])
-                db.session.add(new_db)
-                db.session.commit()
-        
-        # 3. Create SIEM Dataset (siem.logs_parsed)
-        spark_db = db.session.query(Database).filter_by(database_name=spark_name).first()
-        if spark_db:
-            table_name = "logs_parsed"
-            schema_name = "siem"
-            print(f"Checking for dataset: {schema_name}.{table_name}")
-            dataset = db.session.query(SqlaTable).filter_by(table_name=table_name, schema=schema_name).first()
-            if not dataset:
-                print(f"Adding dataset {schema_name}.{table_name}...")
-                dataset = SqlaTable(table_name=table_name, schema=schema_name, database=spark_db)
-                db.session.add(dataset)
-                db.session.commit()
-                print("Dataset added.")
-            
-            # 3b. Force metadata sync (this populates Columns)
-            print(f"Syncing metadata for {schema_name}.{table_name}...")
-            dataset.fetch_metadata()
-            db.session.commit()
 
-            # 4. Create a Sample Chart (Events per Topic)
-            chart_params = {
-                "viz_type": "pie",
-                "datasource": f"{dataset.id}__table",
-                "metric": "count",
-                "groupby": ["source_topic"],
-                "row_limit": 10000,
-                "show_legend": True,
-            }
-            chart_name = "SIEM: Event Distribution"
-            print(f"Syncing chart: {chart_name}")
-            chart = db.session.query(Slice).filter_by(slice_name=chart_name).first()
-            if not chart:
-                chart = Slice(slice_name=chart_name, viz_type="pie", datasource_type="table", datasource_id=dataset.id)
-                db.session.add(chart)
-            
-            chart.params = json.dumps(chart_params)
-            db.session.commit()
-            db.session.refresh(chart)
+        # Dashboard
+        dash = db.session.query(Dashboard).filter_by(slug="soc_ndr").first() or Dashboard(dashboard_title="Unified SOC & NDR Command Center", slug="soc_ndr")
+        if admin and admin not in dash.owners: dash.owners.append(admin)
+        cids = [s.id for s in charts]
+        pos = {"DASHBOARD_VERSION_KEY": "v2", "ROOT_ID": {"children": ["GRID_ID"], "id": "ROOT_ID", "type": "ROOT"}, "GRID_ID": {"children": ["R1", "R2", "R3", "R4", "R5"], "id": "GRID_ID", "type": "GRID"}}
+        pos["R1"] = {"children": [f"CHART-{cids[0]}", f"CHART-{cids[1]}", f"CHART-{cids[2]}"], "id": "R1", "type": "ROW"}
+        pos["R2"] = {"children": [f"CHART-{cids[3]}", f"CHART-{cids[4]}"], "id": "R2", "type": "ROW"}
+        pos["R3"] = {"children": [f"CHART-{cids[5]}", f"CHART-{cids[6]}"], "id": "R3", "type": "ROW"}
+        pos["R4"] = {"children": [f"CHART-{cids[7]}"], "id": "R4", "type": "ROW"}
+        pos["R5"] = {"children": [f"CHART-{cids[9]}", f"CHART-{cids[8]}"], "id": "R5", "type": "ROW"}
 
-            # 4b. Create another chart (Top Attacking IPs)
-            chart_ip_params = {
-                "viz_type": "dist_bar",
-                "datasource": f"{dataset.id}__table",
-                "metrics": ["count"],
-                "groupby": ["client_ip"],
-                "adhoc_filters": [
-                    {
-                        "clause": "WHERE",
-                        "comparator": ["400", "401", "403", "404", "429"],
-                        "expressionType": "SIMPLE",
-                        "operator": "IN",
-                        "subject": "status_code"
-                    }
-                ],
-                "row_limit": 20,
-                "show_legend": True,
-            }
-            chart_ip_name = "SIEM: Top Attacking IPs"
-            print(f"Syncing chart: {chart_ip_name}")
-            chart_ip = db.session.query(Slice).filter_by(slice_name=chart_ip_name).first()
-            if not chart_ip:
-                chart_ip = Slice(slice_name=chart_ip_name, viz_type="dist_bar", datasource_type="table", datasource_id=dataset.id)
-                db.session.add(chart_ip)
-            
-            chart_ip.params = json.dumps(chart_ip_params)
-            db.session.commit()
-            db.session.refresh(chart_ip)
+        for i, cid in enumerate(cids):
+            w = 4 if i < 3 else (6 if i < 9 else 12)
+            pos[f"CHART-{cid}"] = {"children": [], "id": f"CHART-{cid}", "type": "CHART", "meta": {"chartId": cid, "width": w, "height": 50}}
 
-            # 4c. Create chart (Total Events Count)
-            chart_total_params = {
-                "viz_type": "big_number_total",
-                "datasource": f"{dataset.id}__table",
-                "metric": "count",
-                "subheader": "Total processed logs",
-            }
-            chart_total_name = "SIEM: Total Event Volume"
-            print(f"Syncing chart: {chart_total_name}")
-            chart_total = db.session.query(Slice).filter_by(slice_name=chart_total_name).first()
-            if not chart_total:
-                chart_total = Slice(slice_name=chart_total_name, viz_type="big_number_total", datasource_type="table", datasource_id=dataset.id)
-                db.session.add(chart_total)
-            chart_total.params = json.dumps(chart_total_params)
-            db.session.commit()
-            db.session.refresh(chart_total)
+        dash.position_json, dash.published = json.dumps(pos), True
+        for s in charts:
+            if s not in dash.slices: dash.slices.append(s)
+        db.session.add(dash)
+        db.session.commit()
+        print("DASHBOARD SETUP COMPLETE: slug=soc_ndr")
 
-            # 4d. Create chart (Recent Logs Table)
-            chart_table_params = {
-                "viz_type": "table",
-                "datasource": f"{dataset.id}__table",
-                "metrics": ["count"],
-                "all_columns": ["ingest_ts", "source_topic", "client_ip", "status_code", "raw_log"],
-                "query_mode": "raw",
-                "row_limit": 50,
-                "table_timestamp_format": "smart_date",
-            }
-            chart_table_name = "SIEM: Recent Log Samples"
-            print(f"Syncing chart: {chart_table_name}")
-            chart_table = db.session.query(Slice).filter_by(slice_name=chart_table_name).first()
-            if not chart_table:
-                chart_table = Slice(slice_name=chart_table_name, viz_type="table", datasource_type="table", datasource_id=dataset.id)
-                db.session.add(chart_table)
-            chart_table.params = json.dumps(chart_table_params)
-            db.session.commit()
-            db.session.refresh(chart_table)
-
-            # 4e. Create chart (Events Over Time)
-            chart_time_params = {
-                "viz_type": "echarts_timeseries_line",
-                "datasource": f"{dataset.id}__table",
-                "granularity_sqla": "ingest_ts",
-                "time_grain_sqla": "PT1M",
-                "metrics": ["count"],
-                "groupby": ["source_topic"],
-                "seriesType": "line",
-                "show_legend": True,
-            }
-            chart_time_name = "SIEM: Events Over Time"
-            print(f"Syncing chart: {chart_time_name}")
-            chart_time = db.session.query(Slice).filter_by(slice_name=chart_time_name).first()
-            if not chart_time:
-                chart_time = Slice(slice_name=chart_time_name, viz_type="echarts_timeseries_line", datasource_type="table", datasource_id=dataset.id)
-                db.session.add(chart_time)
-            chart_time.params = json.dumps(chart_time_params)
-            db.session.commit()
-            db.session.refresh(chart_time)
-
-            # 4f. Create chart (Unique Attackers)
-            chart_atk_params = {
-                "viz_type": "big_number_total",
-                "datasource": f"{dataset.id}__table",
-                "metric": {
-                    "expressionType": "SIMPLE",
-                    "column": {"column_name": "client_ip"},
-                    "aggregate": "COUNT_DISTINCT",
-                    "label": "Unique Attackers"
-                },
-                "adhoc_filters": [
-                    {
-                        "clause": "WHERE",
-                        "comparator": ["400", "401", "403", "404", "429"],
-                        "expressionType": "SIMPLE",
-                        "operator": "IN",
-                        "subject": "status_code"
-                    }
-                ],
-                "subheader": "Distinct attacking IP addresses",
-            }
-            chart_atk_name = "SIEM: Unique Attackers"
-            print(f"Syncing chart: {chart_atk_name}")
-            chart_atk = db.session.query(Slice).filter_by(slice_name=chart_atk_name).first()
-            if not chart_atk:
-                chart_atk = Slice(slice_name=chart_atk_name, viz_type="big_number_total", datasource_type="table", datasource_id=dataset.id)
-                db.session.add(chart_atk)
-            chart_atk.params = json.dumps(chart_atk_params)
-            db.session.commit()
-            db.session.refresh(chart_atk)
-
-            # 5. Create Dashboard
-            dash_name = "SIEM SOC Overview"
-            print(f"Syncing dashboard: {dash_name}")
-            dash = db.session.query(Dashboard).filter_by(dashboard_title=dash_name).first()
-            
-            # Ensure all IDs are fresh
-            db.session.refresh(chart)
-            db.session.refresh(chart_ip)
-            db.session.refresh(chart_total)
-            db.session.refresh(chart_table)
-            db.session.refresh(chart_time)
-            db.session.refresh(chart_atk)
-            
-            cids = [chart_total.id, chart_atk.id, chart_time.id, chart.id, chart_ip.id, chart_table.id]
-            print(f"Chart IDs: {cids}")
-            
-            # Rebuild a valid layout
-            pos_data = {
-                "DASHBOARD_VERSION_KEY": "v2",
-                "ROOT_ID": {"children": ["GRID_ID"], "id": "ROOT_ID", "type": "ROOT"},
-                "GRID_ID": {"children": ["ROW-0", "ROW-1", "ROW-2", "ROW-3"], "id": "GRID_ID", "type": "GRID"},
-                "ROW-0": {"children": [f"CHART-{cids[0]}", f"CHART-{cids[1]}"], "id": "ROW-0", "type": "ROW", "meta": {"background": "BACKGROUND_TRANSPARENT"}},
-                "ROW-1": {"children": [f"CHART-{cids[2]}"], "id": "ROW-1", "type": "ROW", "meta": {"background": "BACKGROUND_TRANSPARENT"}},
-                "ROW-2": {"children": [f"CHART-{cids[3]}", f"CHART-{cids[4]}"], "id": "ROW-2", "type": "ROW", "meta": {"background": "BACKGROUND_TRANSPARENT"}},
-                "ROW-3": {"children": [f"CHART-{cids[5]}"], "id": "ROW-3", "type": "ROW", "meta": {"background": "BACKGROUND_TRANSPARENT"}},
-            }
-            
-            # Add chart components
-            for i, cid in enumerate(cids):
-                # cids[0], cids[1] share ROW-0 (width 6 each)
-                # cids[2] full ROW-1 (width 12)
-                # cids[3], cids[4] share ROW-2 (width 6 each)
-                # cids[5] full ROW-3 (width 12)
-                width = 12 if i in [2, 5] else 6
-                pos_data[f"CHART-{cid}"] = {
-                    "children": [],
-                    "id": f"CHART-{cid}",
-                    "meta": {"chartId": cid, "width": width, "height": 50},
-                    "type": "CHART"
-                }
-
-            if not dash:
-                dash = Dashboard(dashboard_title=dash_name)
-                db.session.add(dash)
-            
-            dash.published = True
-            dash.slices = [chart_total, chart_atk, chart_time, chart, chart_ip, chart_table]
-            dash.position_json = json.dumps(pos_data)
-            db.session.commit()
-            print("Dashboard sync completed.")
-except Exception as e:
-    print(f"FAILED to configure Superset: {e}")
-    import traceback
-    traceback.print_exc()
+run_setup()
 EOF
 
 echo "Starting Superset Server..."

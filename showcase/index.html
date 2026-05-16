@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Apache-BigData-SIEM Showcase</title>
+  <title>Apache-BigData-SIEM | Unified SOC & NDR Showcase</title>
   <link rel="icon" href="data:," />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #ffffff; /* Light background for projector visibility */
+      --bg: #ffffff;
       --panel: #f8fafc;
       --panel-2: #f1f5f9;
       --panel-3: #e2e8f0;
@@ -20,11 +20,6 @@
       --accent-2: #ea580c;
       --ok: #16a34a;
       --border: #e2e8f0;
-      /* Component colors */
-      --color-kafka: #E84D0E;
-      --color-spark: #E25A1C;
-      --color-hadoop: #FDE047;
-      --color-hive: #FDE047;
       --glass: rgba(255, 255, 255, 0.9);
       --glass-border: rgba(0, 0, 0, 0.1);
     }
@@ -47,24 +42,20 @@
       overflow-y: auto;
       scroll-snap-type: y mandatory;
       scroll-behavior: smooth;
-      max-width: 100%;
     }
 
-    .hero, .card {
+    section {
       scroll-snap-align: start;
       min-height: 100vh;
       max-height: 100vh;
-      margin: 0;
       padding: 3vh 5vw;
-      border: none;
-      border-radius: 0;
-      box-shadow: none;
       border-bottom: 2px solid var(--border);
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
       background: var(--panel);
       overflow: hidden;
+      position: relative;
     }
 
     .hero {
@@ -72,84 +63,40 @@
       align-items: center;
       justify-content: center;
       text-align: center;
-      position: relative;
-    }
-
-    .hero::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: radial-gradient(circle at center, transparent 0%, rgba(255,255,255,0.8) 80%);
-      pointer-events: none;
-    }
-
-    .hero > * {
-      position: relative;
-      z-index: 1;
     }
 
     .title {
-      font-size: 5rem;
+      font-size: 4.5rem;
       font-weight: 800;
       margin-bottom: 1.5rem;
       line-height: 1.1;
       color: var(--text);
-      letter-spacing: -1px;
     }
 
     .subtitle {
       color: var(--muted);
-      font-size: 2.2rem;
-      max-width: 1000px;
+      font-size: 2rem;
+      max-width: 1100px;
       margin: 0 auto;
-      font-weight: 400;
     }
 
     .badge {
       display: inline-flex;
-      align-items: center;
-      gap: 6px;
       padding: 6px 16px;
       border-radius: 999px;
-      background: rgba(234, 88, 12, 0.12);
-      color: var(--accent-2);
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--accent);
       font-size: 1.2rem;
       margin-bottom: 12px;
-      border: 1px solid rgba(234, 88, 12, 0.25);
+      border: 1px solid rgba(37, 99, 235, 0.2);
       font-weight: 600;
     }
 
-    .ok-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: 999px;
-      background: rgba(22, 163, 74, 0.1);
-      color: var(--ok);
-      font-size: 1.2rem;
-      margin-left: 12px;
-      border: 1px solid rgba(22, 163, 74, 0.2);
-      font-weight: 600;
-    }
-
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .card > * {
-      animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-
-    .card h3 {
-      font-size: 3.5rem;
+    h3 {
+      font-size: 3.2rem;
       color: var(--accent);
-      margin: 0 0 1.8rem 0;
-      padding-bottom: 0.8rem;
+      margin: 0 0 1.5rem 0;
+      padding-bottom: 0.5rem;
       border-bottom: 4px solid #334155;
       display: inline-block;
       align-self: flex-start;
@@ -157,406 +104,292 @@
 
     .presentation-list {
       margin: 0;
-      padding-left: 2rem;
-      color: var(--text);
+      padding-left: 1.5rem;
     }
 
     .presentation-list li {
-      font-size: 1.8rem;
-      margin-bottom: 1.2rem;
-      line-height: 1.55;
+      font-size: 1.6rem;
+      margin-bottom: 1rem;
     }
 
-    .presentation-list li::marker {
-      color: var(--accent);
-      font-weight: bold;
-    }
-
-    .presentation-title {
-      font-size: 2.2rem;
-      color: #0369a1;
-      font-weight: 700;
-      margin: 1.8rem 0 1rem 0;
-    }
-
-    .arch-grid {
+    .tech-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 1.5rem;
-      width: 100%;
-      margin-top: 1rem;
-    }
-
-    .arch-box {
-      border: 1px solid var(--border);
-      border-left: 6px solid var(--accent);
-      border-radius: 14px;
-      padding: 1.5rem;
-      background: var(--panel-3);
-    }
-
-    .arch-box h4 {
-      margin: 0 0 0.8rem;
-      font-size: 1.8rem;
-      color: var(--text);
-    }
-
-    .arch-box p {
-      margin: 0;
-      font-size: 1.4rem;
-      color: var(--muted);
-      line-height: 1.45;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+      align-items: center;
     }
 
     .compare-table {
-      font-size: 1.4rem;
+      font-size: 1.2rem;
       width: 100%;
       margin-top: 1rem;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.08);
-      border-radius: 16px;
-      overflow: hidden;
       border-collapse: collapse;
       background: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
 
     .compare-table th {
-      background: linear-gradient(135deg, var(--accent) 0%, #0284c7 100%);
+      background: var(--accent);
       color: white;
-      font-size: 1.5rem;
-      padding: 1.2rem;
+      padding: 0.8rem;
       text-align: left;
-      font-weight: 600;
     }
 
     .compare-table td {
-      padding: 1.2rem 1.2rem;
+      padding: 0.6rem 0.8rem;
       border-bottom: 1px solid var(--border);
-      line-height: 1.4;
-      background: var(--panel);
     }
-
-    .compare-table tr:last-child td { border-bottom: none; }
 
     .code-block {
-      font-size: 1.2rem;
-      padding: 1.5rem;
+      font-size: 0.9rem;
+      padding: 1.2rem;
       background: var(--panel-2);
-      color: var(--text);
-      border-left: 6px solid #38bdf8;
+      border-left: 6px solid var(--accent);
       border-radius: 12px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
       overflow-x: auto;
-      max-height: 48vh;
-      font-family: "Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      margin-top: 1rem;
-      line-height: 1.55;
+      margin-top: 0.8rem;
       white-space: pre;
+      font-family: monospace;
+      color: #1e293b;
     }
-
-    .flow {
-      margin-top: 1.5rem;
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 0.8rem;
-      color: #0f172a;
-      font-weight: 700;
-      font-size: 1.6rem;
-    }
-
-    .chip {
-      padding: 0.6rem 1rem;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: #f0f9ff;
-      color: #0c4a6e;
-    }
-
-    .arrow { color: #0369a1; }
 
     .progress {
       position: fixed;
       right: 18px;
       top: 18px;
-      z-index: 40;
       background: var(--glass);
       border: 1px solid var(--glass-border);
       border-radius: 999px;
       padding: 8px 14px;
       font-size: 1.1rem;
-      color: var(--text);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 100;
     }
 
-    .note {
-      position: fixed;
-      left: 18px;
-      bottom: 18px;
-      z-index: 40;
-      background: var(--glass);
-      border: 1px solid var(--glass-border);
-      border-radius: 12px;
-      padding: 10px 12px;
-      font-size: 1rem;
-      color: var(--muted);
-      line-height: 1.4;
-      max-width: 420px;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
-
-    /* Diagram Styles */
-    .svg-diagram {
-      width: 100%;
-      max-height: 55vh;
-      margin-top: 2rem;
-      background: white;
+    .mermaid {
+      background: white !important;
+      padding: 20px;
       border-radius: 16px;
       border: 1px solid var(--border);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-      padding: 1rem;
-    }
-
-    /* Tech Info blocks */
-    .tech-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 2rem;
-      margin-top: 1.5rem;
-      align-items: center;
-    }
-    .tech-logo {
-      width: 100%;
-      max-width: 250px;
-      margin: 0 auto;
-      display: block;
-      filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
-    }
-    .tech-desc p {
-      font-size: 1.8rem;
-      line-height: 1.6;
-      color: var(--muted);
-      margin-bottom: 1rem;
-    }
-    .tech-desc strong {
-      color: #38bdf8;
-    }
-
-    @media (max-width: 1100px) {
-      .title { font-size: 3.4rem; }
-      .subtitle { font-size: 1.6rem; }
-      .card h3 { font-size: 2.5rem; }
-      .presentation-list li { font-size: 1.4rem; }
-      .arch-grid { grid-template-columns: 1fr; }
-      .tech-grid { grid-template-columns: 1fr; }
-      .compare-table { font-size: 1.2rem; }
-      .compare-table th { font-size: 1.2rem; }
-      .note { display: none; }
+      box-shadow: 0 15px 35px rgba(0,0,0,0.05);
     }
   </style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ 
+      theme: 'default',
+      flowchart: { useMaxWidth: false, htmlLabels: true },
+      securityLevel: 'loose'
+    });
+  </script>
 </head>
 <body>
-  <div class="progress" id="progress">Slide 1 / 15</div>
+  <div class="progress" id="progress">Slide 1 / 17</div>
 
   <div class="page" id="slides">
+    <!-- SLIDE 1: HERO -->
     <header class="hero">
-      <div class="badge">Apache-BigData-SIEM</div>
-      <div class="title">Lakehouse SIEM Showcase <span class="ok-badge">Production Stack</span></div>
-      <div class="subtitle">Spark, Hive, Kafka, Hadoop ve Superset ile açık kaynaklı, ölçeklenebilir ve gerçek zamanlı güvenlik analitiği platformu.</div>
+      <div class="badge">Enterprise SIEM & NDR Platform</div>
+      <div class="title">Unified SOC Command Center</div>
+      <div class="subtitle">Apache Spark, Kafka, Hadoop, Hive ve Zeppelin ile güçlendirilmiş, <br/>Makine Öğrenmesi tabanlı hibrit tehdit algılama ekosistemi.</div>
     </header>
 
-    <section class="card">
-      <h3>1) Neden "Big Data SIEM"?</h3>
+    <!-- SLIDE 2: THE PROBLEM -->
+    <section>
+      <h3>1) Neden Big Data SIEM?</h3>
       <div class="tech-grid">
         <div class="tech-desc">
-          <p>Geleneksel SIEM (Security Information and Event Management) çözümleri çoğunlukla <strong>veri hacmi bazlı lisanslanır</strong> (GB/Gün). Bu durum kurumları, maliyeti düşürmek adına bazı kritik logları silmeye veya görmezden gelmeye zorlar.</p>
-          <p><strong>Lakehouse mimarisi</strong> bu sorunu çözmek için tasarlandı:</p>
-          <ul class="presentation-list" style="padding-left:0;">
-            <li>Sınırsız ve ucuz veri depolama (Hadoop HDFS).</li>
-            <li>Gerçek zamanlı uyarı ve anomali tespiti (Spark Streaming).</li>
-            <li>Geriye dönük yıllar süren hızlı SQL analizleri (Hive).</li>
-            <li>Lisans maliyeti %0, sadece donanım masrafı.</li>
+          <p>Geleneksel SIEM'ler veri hacmi arttıkça (EPS) maliyet ve performans darboğazına girer.</p>
+          <ul class="presentation-list">
+            <li><strong>Maliyet:</strong> Lisans ücreti yok, tamamen açık kaynak.</li>
+            <li><strong>Ölçek:</strong> Hadoop HDFS ile petabaytlarca veri sınırsız depolanır.</li>
+            <li><strong>Hibrit Tespit:</strong> Hem imza tabanlı (Rules) hem davranışsal (ML) analiz.</li>
+            <li><strong>Zenginleştirme:</strong> Loglar işlendiği an GeoIP ve Tehdit İstihbaratı ile değer kazanır.</li>
           </ul>
         </div>
+        <svg viewBox="0 0 200 200">
+          <path d="M100 20 L20 60 L20 140 L100 180 L180 140 L180 60 Z" fill="#f0f9ff" stroke="#2563eb" stroke-width="8" />
+          <path d="M100 20 L100 100 L180 60" fill="none" stroke="#2563eb" stroke-width="4" />
+          <path d="M20 60 L100 100 L100 180" fill="none" stroke="#2563eb" stroke-width="4" />
+          <text x="100" y="110" font-family="sans-serif" font-size="20" font-weight="bold" fill="#2563eb" text-anchor="middle">SCALE</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: DATA SOURCE (SECREPO) -->
+    <section>
+      <h3>2) Veri Kaynağı: SecRepo Security Datasets</h3>
+      <div class="tech-grid">
+        <div class="tech-desc">
+          <p>Analiz edilen tüm veriler <strong>SecRepo.com</strong> (Cyber Security Dataset Repository) üzerinden alınan gerçek dünya saldırı kayıtlarıdır:</p>
+          <ul class="presentation-list">
+            <li><strong>Gerçekçi Tehditler:</strong> Zararlı yazılım trafikleri, sızma testleri ve gerçek ağ akışları.</li>
+            <li><strong>Multi-File Producer:</strong> SecRepo'dan alınan devasa log dosyalarını (Web, Syslog, Zeek) paralel olarak işler.</li>
+            <li><strong>Yüksek Sadakat:</strong> Simüle edilmiş loglar yerine, gerçek ağ kartlarından (PCAP) yakalanmış trafik verileri kullanılır.</li>
+          </ul>
+        </div>
+        <div class="code-block">
+# SecRepo Real-World Data Ingestion
+def producer_process():
+    # Process SecRepo PCAP/JSON exports in parallel
+    files = ["http.log", "dns.log", "conn.log"]
+    producer = KafkaProducer(bootstrap_servers='kafka:9092')
+    
+    for log_file in files:
+        # Multi-threaded file streaming to Kafka topics
+        stream_file_to_topic(log_file, topic_mapping[log_file])
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: KAFKA -->
+    <section>
+      <h3>3) Veri Hattı: Apache Kafka (KRaft)</h3>
+      <div class="tech-grid">
+        <div class="tech-desc">
+          <p>Apache Kafka, sistemin sinir sistemidir ve veri akışını yönetir.</p>
+          <ul class="presentation-list">
+            <li><strong>KRaft Mode:</strong> Zookeeper bağımlılığı olmadan metadata yönetimi.</li>
+            <li><strong>Zero-Copy:</strong> Veriyi RAM'den NIC'e doğrudan ileterek ultra düşük gecikme sağlar.</li>
+            <li><strong>Topic Partitioning:</strong> Veriyi parçalayarak Spark Worker'lar arasında paralel işlenmesini sağlar.</li>
+          </ul>
+        </div>
+        <svg viewBox="0 0 200 200">
+           <circle cx="100" cy="100" r="80" fill="none" stroke="#E84D0E" stroke-width="8" stroke-dasharray="20,10"/>
+           <text x="100" y="105" font-family="sans-serif" font-size="14" font-weight="bold" fill="#E84D0E" text-anchor="middle">KAFKA</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: SPARK -->
+    <section>
+      <h3>4) Analiz Motoru: Apache Spark Streaming</h3>
+      <div class="tech-grid">
+        <div class="tech-desc">
+          <p>Bellek içi (In-Memory) dağıtık işlemci.</p>
+          <ul class="presentation-list">
+            <li><strong>Project Tungsten:</strong> Binary veri formatı ile JVM overhead'ini yok eder.</li>
+            <li><strong>Micro-Batching:</strong> Veriyi saniyelik paketler halinde işleyerek anlık analiz sunar.</li>
+            <li><strong>Checkpointing:</strong> Hata anında kaldığı yerden devam ederek veri kaybını önler.</li>
+          </ul>
+        </div>
+        <svg viewBox="0 0 200 200">
+           <path d="M100 20 L50 100 L80 100 L80 180 L140 80 L110 80 Z" fill="#E25A1C" />
+           <text x="100" y="200" font-family="sans-serif" font-size="16" font-weight="bold" fill="#E25A1C" text-anchor="middle">SPARK</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: HADOOP -->
+    <section>
+      <h3>5) Veri Gölü: Apache Hadoop (HDFS)</h3>
+      <div class="tech-grid">
+        <div class="tech-desc">
+          <p>Yüzlerce sunucuyu tek bir devasa disk gibi yöneten dosya sistemi.</p>
+          <ul class="presentation-list">
+            <li><strong>NameNode:</strong> Dosya sisteminin metadata'sını ve blok haritasını tutar.</li>
+            <li><strong>DataNode:</strong> Gerçek veri bloklarını depolayan ve kopyalayan sunucular.</li>
+            <li><strong>Rack Awareness:</strong> Verileri fiziksel olarak farklı raflarda yedekler.</li>
+          </ul>
+        </div>
+        <svg viewBox="0 0 200 200">
+           <rect x="20" y="40" width="160" height="30" rx="5" fill="#facc15" />
+           <rect x="20" y="90" width="160" height="30" rx="5" fill="#fde047" />
+           <text x="100" y="110" font-family="sans-serif" font-size="14" fill="#854d0e" text-anchor="middle">HDFS</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: HIVE -->
+    <section>
+      <h3>6) Veri Kataloğu: Apache Hive</h3>
+      <div class="tech-grid">
+        <div class="tech-desc">
+          <p>HDFS üzerindeki Parquet dosyalarını SQL tabloları olarak sunan ambar katmanı.</p>
+          <ul class="presentation-list">
+            <li><strong>Metastore:</strong> Tablo şemalarını tutar (Spark ve Superset ile paylaşır).</li>
+            <li><strong>Parquet:</strong> Kolonel depolama ile sadece gerekli veriyi okur, hızı artırır.</li>
+            <li><strong>Partitioning:</strong> Veriyi `ingest_date` gibi alanlara göre klasörleyerek tarama maliyetini düşürür.</li>
+          </ul>
+        </div>
+        <svg viewBox="0 0 200 200">
+           <polygon points="100,20 180,60 180,140 100,180 20,140 20,60" fill="#fef08a" stroke="#eab308" stroke-width="4" />
+           <text x="100" y="105" font-family="sans-serif" font-size="20" font-weight="bold" fill="#854d0e" text-anchor="middle">HIVE</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: ZEPPELIN -->
+    <section>
+      <h3>7) İnteraktif Analiz: Apache Zeppelin</h3>
+      <div class="tech-grid">
+        <div class="tech-desc">
+          <p>SOC analistleri için web tabanlı notebook ve veri keşif aracı.</p>
+          <ul class="presentation-list">
+            <li><strong>Spark Interpreter:</strong> Canlı akış verisini SQL veya Python ile sorgula.</li>
+            <li><strong>Görselleştirme:</strong> Sorgu sonuçlarını anında pasta, çizgi veya bar grafiklerine dönüştürür.</li>
+            <li><strong>Canlı İzleme:</strong> Hive tablolarındaki son verileri periyodik olarak yenileyerek raporlar.</li>
+          </ul>
+        </div>
+        <svg viewBox="0 0 200 200">
+           <rect x="30" y="30" width="140" height="140" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="4"/>
+           <path d="M50 70 L150 70 M50 100 L120 100" stroke="#16a34a" stroke-width="6" stroke-linecap="round"/>
+           <text x="100" y="185" font-family="sans-serif" font-size="14" font-weight="bold" fill="#15803d" text-anchor="middle">ZEPPELIN</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: NDR MODEL (DETAYLI) -->
+    <section>
+      <h3>8) NDR Katmanı: K-Means Anomali Analizi</h3>
+      <div class="tech-grid">
         <div>
-           <!-- SVG Icon representation for Cost/Scale -->
-           <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-             <path d="M100 20 L20 60 L20 140 L100 180 L180 140 L180 60 Z" fill="#f0f9ff" stroke="#0284c7" stroke-width="8" />
-             <path d="M100 20 L100 100 L180 60" fill="none" stroke="#0284c7" stroke-width="4" />
-             <path d="M20 60 L100 100 L100 180" fill="none" stroke="#0284c7" stroke-width="4" />
-             <text x="100" y="110" font-family="sans-serif" font-size="20" font-weight="bold" fill="#0369a1" text-anchor="middle">SCALE</text>
-           </svg>
+          <p>Geleneksel kuralların kaçırdığı "Bilinmeyen" tehditleri yakalamak için kurduğumuz model:</p>
+          <ul class="presentation-list">
+            <li><strong>Feature Engineering:</strong> Süre, Byte (Log-scaled) ve Protokol özellikleri.</li>
+            <li><strong>Kümeleme:</strong> Trafik 8 normal küme (Cluster) altında toplanır.</li>
+            <li><strong>Anomali Skoru (WSSSE):</strong> Her akışın merkeze uzaklığı hesaplanır; >10.0 ise ANOMALİ.</li>
+            <li><strong>Continuous Learning:</strong> Model her 50 batch'te bir (yeni veriyle) kendini eğitir.</li>
+          </ul>
+        </div>
+        <div class="code-block">
+# NDR Prediction & Scoring
+predictions = model.transform(vector_df)
+anomalies = predictions.withColumn("dist", calc_dist(col("features"), col("prediction")))
+           .filter(col("dist") > 10.0)
         </div>
       </div>
     </section>
 
-    <!-- KAFKA -->
-    <section class="card">
-      <h3>2) Veri Giriş Kapısı: Apache Kafka Nedir?</h3>
+    <!-- SLIDE 10: SIEM RULES & ENRICHMENT (DETAYLI) -->
+    <section>
+      <h3>9) SIEM: Deterministik Kurallar ve Zenginleştirme</h3>
       <div class="tech-grid">
-        <div class="tech-desc">
-          <p><strong>Apache Kafka</strong>, dağıtık, yüksek performanslı bir olay akışı (event streaming) platformudur.</p>
-          <p>Saniyede milyonlarca log üretildiğinde (DDoS saldırısı, log burst vb.) sistemlerin çökmesini engellemek için bir <strong>"tampon" (buffer)</strong> görevi görür.</p>
-          <ul class="presentation-list" style="padding-left:0;">
-            <li><strong>Topic:</strong> Mantıksal veri kanallarıdır (örn. web-logs, syslogs).</li>
-            <li><strong>Zero-Copy & PageCache:</strong> Veriyi RAM'den diske kopyalamadan doğrudan ağ kartına (NIC) gönderir, bu da inanılmaz düşük gecikme sağlar.</li>
-            <li><strong>KRAFT Mimarisi:</strong> Artık Zookeeper'a ihtiyaç duymadan metadata yönetimini kendi içinde yapar (KRaft mode).</li>
-            <li><strong>Scalability:</strong> Partition yapısı sayesinde yatayda sınırsız ölçeklenebilir.</li>
-          </ul>
-        </div>
         <div>
-          <!-- Kafka stylized graphic -->
-          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-             <circle cx="100" cy="100" r="80" fill="none" stroke="#E84D0E" stroke-width="8" stroke-dasharray="20,10"/>
-             <circle cx="100" cy="100" r="40" fill="#E84D0E" />
-             <path d="M50 100 L80 100" stroke="#E84D0E" stroke-width="8" />
-             <path d="M120 100 L150 100" stroke="#E84D0E" stroke-width="8" />
-             <text x="100" y="105" font-family="sans-serif" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">KAFKA</text>
-          </svg>
-        </div>
-      </div>
-    </section>
-
-    <!-- SPARK -->
-    <section class="card">
-      <h3>3) Analiz Motoru: Apache Spark Nedir?</h3>
-      <div class="tech-grid">
-        <div class="tech-desc">
-          <p><strong>Apache Spark</strong>, büyük veri kümelerini bellek (RAM) üzerinde paralel olarak işleyebilen, inanılmaz hızlı bir dağıtık analiz motorudur.</p>
-          <p>Projelerimizde <strong>Spark Structured Streaming</strong> kullanarak Kafka'dan akan logları <em>anlık olarak</em> okur, temizler, formatlar (Extract, Transform, Load - ETL) ve depolarız.</p>
-          <ul class="presentation-list" style="padding-left:0;">
-            <li><strong>Project Tungsten:</strong> Veriyi Java nesneleri yerine ham binary formatında (Off-Heap) işleyerek Garbage Collection yükünü sıfırlar.</li>
-            <li><strong>Catalyst Optimizer:</strong> SQL sorgularını otomatik olarak optimize eder ve en hızlı çalışma planını (DAG) oluşturur.</li>
-            <li><strong>Structured Streaming:</strong> "Exactly-Once" işlem garantisi ile veri kaybını önler.</li>
+          <p>Bilinen saldırı paternlerini yakalayan kural motorumuz:</p>
+          <ul class="presentation-list">
+            <li><strong>Port Scanning:</strong> Tek bir IP'nin 50+ farklı porta bağlantı kurması.</li>
+            <li><strong>Data Exfiltration:</strong> Ağ dışına yapılan 100MB+ büyüklüğünde transferler.</li>
+            <li><strong>GeoIP Enrichment:</strong> IP'lerin hangi ülkeden geldiği (Russia, China vb.) anında eklenir.</li>
+            <li><strong>Threat Intel:</strong> Bilinen zararlı IP'ler (Tor, Botnet) otomatik etiketlenir.</li>
           </ul>
         </div>
-        <div>
-          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-             <path d="M100 20 L50 100 L80 100 L80 180 L140 80 L110 80 Z" fill="#E25A1C" />
-             <text x="100" y="200" font-family="sans-serif" font-size="16" font-weight="bold" fill="#E25A1C" text-anchor="middle">SPARK (ETL)</text>
-          </svg>
+        <div class="code-block">
+# Enrichment & Rule Logic
+SELECT client_ip, country, intel_tag, COUNT(*) as hits
+FROM batch_logs
+WHERE country != 'Internal' AND status = 'error'
+GROUP BY client_ip, country, intel_tag
+HAVING hits > 50
         </div>
       </div>
     </section>
 
-    <!-- HADOOP -->
-    <section class="card">
-      <h3>4) Veri Gölü: Apache Hadoop (HDFS)</h3>
-      <div class="tech-grid">
-        <div class="tech-desc">
-          <p><strong>HDFS (Hadoop Distributed File System)</strong>, devasa boyutlardaki dosyaları standart sunucuların disklerine dağıtarak depolayan bir dosya sistemidir.</p>
-          <p>Güvenlik logları yıllarca petabaytlarca veri oluşturur. HDFS bu veriyi bloklara böler ve farklı makinelere kopyalayarak saklar.</p>
-          <ul class="presentation-list" style="padding-left:0;">
-            <li><strong>NameNode:</strong> Sistemin beyni; hangi dosya hangi makinede, haritayı tutar.</li>
-            <li><strong>DataNode:</strong> Gerçek veriyi depolayan işçi sunucular.</li>
-            <li><strong>Reliability:</strong> Her veri bloğu varsayılan olarak 3 (bizde 2) kez kopyalanır.</li>
-          </ul>
-        </div>
-        <div>
-          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-             <rect x="20" y="40" width="160" height="30" rx="5" fill="#facc15" />
-             <rect x="20" y="90" width="160" height="30" rx="5" fill="#fde047" />
-             <rect x="20" y="140" width="160" height="30" rx="5" fill="#fef08a" />
-             <circle cx="40" cy="55" r="5" fill="#ca8a04"/>
-             <circle cx="40" cy="105" r="5" fill="#ca8a04"/>
-             <circle cx="40" cy="155" r="5" fill="#ca8a04"/>
-             <text x="100" y="60" font-family="sans-serif" font-size="14" fill="#854d0e" text-anchor="middle">NameNode</text>
-             <text x="100" y="110" font-family="sans-serif" font-size="14" fill="#854d0e" text-anchor="middle">DataNode 1</text>
-             <text x="100" y="160" font-family="sans-serif" font-size="14" fill="#854d0e" text-anchor="middle">DataNode 2</text>
-          </svg>
-        </div>
-      </div>
-    </section>
-
-    <!-- HIVE -->
-    <section class="card">
-      <h3>5) Veri Kataloğu: Apache Hive</h3>
-      <div class="tech-grid">
-        <div class="tech-desc">
-          <p><strong>Apache Hive</strong>, Hadoop üzerinde depolanan ham verilere <strong>SQL</strong> kullanarak sorgu atmamızı sağlayan bir veri ambarı katmanıdır.</p>
-          <p>Lakehouse mimarisinin kilit taşıdır; veriyi bir tablo gibi gösterir.</p>
-          <ul class="presentation-list" style="padding-left:0;">
-            <li><strong>Hive Metastore:</strong> Dosyaların tablo yapısını ve şemasını yönetir.</li>
-            <li><strong>Lakehouse Pattern:</strong> Parquet gibi yüksek performanslı kolonel formatlarla SQL hızını birleştirir.</li>
-            <li><strong>Interoperability:</strong> Hem Spark hem de BI araçları (Superset) aynı metadata üzerinden konuşur.</li>
-          </ul>
-        </div>
-        <div>
-          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-             <polygon points="100,20 180,60 180,140 100,180 20,140 20,60" fill="none" stroke="#eab308" stroke-width="8" />
-             <polygon points="100,40 160,70 160,130 100,160 40,130 40,70" fill="#fef08a" />
-             <text x="100" y="105" font-family="sans-serif" font-size="20" font-weight="bold" fill="#854d0e" text-anchor="middle">SQL</text>
-          </svg>
-        </div>
-      </div>
-    </section>
-
-    <!-- SUPERSET -->
-    <section class="card">
-      <h3>6) Görselleştirme: Apache Superset & Alerting</h3>
-      <div class="tech-grid">
-        <div class="tech-desc">
-          <p><strong>Apache Superset</strong>, kurumsal düzeyde bir veri görselleştirme ve BI (Business Intelligence) platformudur.</p>
-          <p>SOC analistleri için gerçek zamanlı güvenlik dashboardları, saldırı trendi grafikleri ve raporlar oluşturmak için kullanılır.</p>
-          <ul class="presentation-list" style="padding-left:0;">
-            <li><strong>SQL Lab:</strong> Hive üzerindeki petabaytlarca log verisini doğrudan tarayıcıdan SQL ile sorgula.</li>
-            <li><strong>Dashboard:</strong> Grafik, tablo, harita gibi görsel bileşenlerle SOC paneli oluştur.</li>
-            <li><strong>Oto-Senkronizasyon:</strong> Yeni tablolar ve sütunlar (`ingest_ts`, `source_topic`) anlık olarak indekslenir.</li>
-          </ul>
-        </div>
-        <div>
-          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-             <rect x="20" y="30" width="160" height="110" rx="10" fill="none" stroke="#fb923c" stroke-width="8"/>
-             <rect x="35" y="50" width="55" height="70" rx="5" fill="#fb923c" opacity="0.3"/>
-             <rect x="100" y="80" width="65" height="40" rx="5" fill="#fb923c" opacity="0.3"/>
-             <path d="M35 120 Q63 60 90 100 Q115 130 130 85 Q150 50 165 80" fill="none" stroke="#fb923c" stroke-width="4"/>
-             <text x="100" y="170" font-family="sans-serif" font-size="16" font-weight="bold" fill="#fb923c" text-anchor="middle">SUPERSET</text>
-          </svg>
-        </div>
-      </div>
-    </section>
-
-    <!-- NEW SOC DASHBOARD SLIDE -->
-    <section class="card">
-      <h3>7) SIEM SOC Overview: Canlı İzleme</h3>
-      <div class="tech-grid">
-        <div class="tech-desc">
-          <p>Platformumuz, kurulduğu anda <strong>6 farklı kritik güvenlik metriğini</strong> içeren tam teşekküllü bir SOC Dashboard'u ile birlikte gelir:</p>
-          <ul class="presentation-list" style="padding-left:0;">
-            <li><strong>Hacim Ölçümü:</strong> Toplam işlenen log sayısı ve anlık trafik yoğunluğu.</li>
-            <li><strong>Saldırı Analitiği:</strong> Benzersiz saldırgan IP sayıları ve hedef alınan servisler.</li>
-            <li><strong>Zaman Serisi:</strong> Dakikalık bazda log akış trendi (Events Over Time).</li>
-            <li><strong>Canlı Akış:</strong> En son gelen 50 logun tüm detaylarıyla (IP, Method, Path, OS) tablolandığı canlı panel.</li>
-          </ul>
-        </div>
-        <div style="background: #0f172a; border-radius: 12px; padding: 15px; border: 2px solid #334155;">
-           <!-- Mock Dashboard Layout -->
-           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-             <div style="background: #1e293b; height: 40px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 12px; font-weight: bold;">TOTAL: 1.2M</div>
-             <div style="background: #1e293b; height: 40px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #f43f5e; font-size: 12px; font-weight: bold;">ATTACKERS: 142</div>
-             <div style="background: #1e293b; grid-column: span 2; height: 60px; border-radius: 4px; position: relative; overflow: hidden;">
-               <svg viewBox="0 0 200 60" style="width: 100%; height: 100%;">
-                 <path d="M0 50 Q50 20 80 40 T150 10 T200 30 L200 60 L200 60 L0 60 Z" fill="rgba(56, 189, 248, 0.2)" stroke="#38bdf8" stroke-width="2" />
-               </svg>
-             </div>
-             <div style="background: #1e293b; height: 50px; border-radius: 4px;"></div>
-             <div style="background: #1e293b; height: 50px; border-radius: 4px;"></div>
-           </div>
-           <p style="color: #94a3b8; font-size: 12px; margin-top: 10px; text-align: center;">Uçtan Uca Otomatik SOC Paneli</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ARCHITECTURE FLOW -->
-    <section class="card">
-      <h3>8) Proje Akış Mimarisi</h3>
-      <p class="presentation-title">Uçtan uca veri yolculuğu (Data Pipeline)</p>
-      
+    <!-- SLIDE 11: FULL ARCHITECTURE (GÜNCELLENDİ) -->
+    <section>
+      <h3>10) Uçtan Uca Veri Akış Mimarisi</h3>
       <div style="text-align: center; margin-top: 1rem; height: 100%; display: flex; justify-content: center; align-items: center;">
-        <div class="mermaid" style="background: white; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.05); padding: 10px; width: 80%; max-width: 900px;">
+        <div class="mermaid" style="width: 85%;">
         flowchart TB
-            %% Styling
             classDef node fill:#f8fafc,stroke:#94a3b8,stroke-width:2px,color:#0f172a,font-weight:bold,font-size:18px
             classDef producer fill:#f1f5f9,stroke:#cbd5e1,stroke-width:2px,color:#0f172a,font-weight:bold,font-size:16px
             classDef buffer fill:#fff7ed,stroke:#fb923c,stroke-width:3px,color:#c2410c,font-weight:bold,font-size:18px
@@ -564,102 +397,96 @@
             classDef storage fill:#f0fdf4,stroke:#4ade80,stroke-width:3px,color:#15803d,font-weight:bold,font-size:18px
             classDef catalog fill:#fefce8,stroke:#facc15,stroke-width:3px,color:#854d0e,font-weight:bold,font-size:18px
             
-            subgraph DataGeneration ["1. Log Üretimi (Producers)"]
+            subgraph DataSources ["1. Ingestion Layer"]
                 direction LR
-                P1("flog-web"):::producer
-                P2("flog-syslog"):::producer
-                P3("flog-app"):::producer
-                P4("flog-winevent"):::producer
+                P1("Multi-File Producer"):::producer
+                P2("Log Files (Zeek/Web)"):::producer
+                ENR("Enrichment API"):::node
             end
 
-            K1("2. Apache Kafka<br/>(Event Streaming & Buffer)"):::buffer
+            K1("2. Kafka (KRaft Buffer)"):::buffer
 
-            S1("3. Apache Spark<br/>(ETL & SQL Engine)"):::etl
+            subgraph Processing ["3. Spark Analytics Engine"]
+                direction LR
+                S1("ETL & Parsing"):::etl
+                ML("NDR: K-Means ML"):::etl
+                RULE("Security Rules"):::etl
+            end
 
-            subgraph StorageCatalog ["4. Lakehouse (Depolama & Sorgu)"]
+            subgraph StorageCatalog ["4. Lakehouse (Hive & HDFS)"]
                 direction LR
                 HDFS("HDFS (Parquet)"):::storage
                 HIVE("Hive Metastore"):::catalog
+                ZEP("Zeppelin Notebook"):::catalog
             end
 
-            DB[("Postgres<br/>(Metadata DB)")]:::buffer
-            SUP("5. Apache Superset<br/>(Dashboard & Alerting)"):::buffer
+            SUP("5. Superset (SOC Dashboard)"):::buffer
 
-            %% Flow
-            P1 & P2 & P3 & P4 --> K1
-            
-            K1 ==>|"Consume"| S1
-            
-            S1 ==>|"Write Parquet"| HDFS
-            S1 -.->|"Update Schema"| HIVE
-            HIVE -.->|"Warehouse"| HDFS
-            
-            SUP ==>|"Interactive SQL"| S1
-            S1 <-->|"Get Schema"| HIVE
+            P1 & P2 --> K1
+            K1 ==> Processing
+            Processing ==> HDFS
+            Processing -.-> HIVE
+            ZEP -.-> Processing
+            SUP ==> HDFS
         </div>
       </div>
     </section>
 
-    <section class="card" style="justify-content: center; padding: 0;">
+    <!-- SLIDE 12: FULL CLUSTER (GÜNCELLENDİ) -->
+    <section style="justify-content: center; padding: 0;">
       <div style="text-align: center; width: 100%; height: 100vh; display: flex; justify-content: center; align-items: center;">
-        <div class="mermaid" style="background: white; border-radius: 0; border: none; box-shadow: none; padding: 20px; width: 100%; height: 100%; max-width: 100vw; font-size: 16px;">
+        <div class="mermaid" style="width: 95%; height: 90%;">
         graph TD
-            subgraph FLOG["📡 Log Generators (Flog)"]
-                FW["Flog Web<br/><i>web-logs</i>"]
-                FS["Flog Syslog<br/><i>syslogs</i>"]
-                FA["Flog App<br/><i>app-logs</i>"]
-                FE["Flog WinEvent<br/><i>win-event-logs</i>"]
+            subgraph SOURCES["📡 Data Sources (SecRepo)"]
+                KP["Kafka Producer (Python)"]
+                Z["Zeek / Bro Logs"]
+                W["HTTP / DNS Logs"]
             end
 
-            subgraph KAFKA["📨 Messaging Layer"]
-                KB["Kafka Broker<br/><b>KRaft Mode</b><br/>:9092"]
+            subgraph KAFKA["📨 Messaging (Kafka Cluster)"]
+                KB["Kafka Broker"]
+                KR["KRaft Controller"]
             end
 
-            subgraph SPARK["⚙️ Processing Layer (Spark)"]
-                SM["Spark Master<br/>:8080 · :7077 · :10000"]
-                SW1["Spark Worker 1<br/>2G RAM · 2 Cores<br/>:8081"]
-                SW2["Spark Worker 2<br/>2G RAM · 2 Cores<br/>:8082"]
+            subgraph SPARK["⚙️ Processing Cluster"]
+                SM["Spark Master"]
+                SW1["Worker 1 (ML)"]
+                SW2["Worker 2 (Rules)"]
             end
 
-            subgraph HIVE["🗂️ Data Cataloging (Hive)"]
-                HM["Hive Metastore<br/>:9083"]
-                HS2["Hive Server2<br/>:10001 · :10002"]
+            subgraph HIVE["🗂️ Metadata & Analytics"]
+                HM["Hive Metastore"]
+                HS2["Hive Server2"]
+                ZEP["Zeppelin Notebook"]
             end
 
-            subgraph HDFS["💾 Distributed Storage (HDFS)"]
-                NN["Namenode<br/>:9870 · :8020"]
+            subgraph HDFS["💾 Storage Cluster"]
+                NN["Namenode"]
                 DN1["Datanode 1"]
                 DN2["Datanode 2"]
             end
 
-            subgraph DB["🗄️ Unified Database"]
-                PG[("Postgres")]
+            subgraph DB["🗄️ Database Layer"]
+                PG[("Postgres DB")]
+                RD[("Redis Cache")]
             end
 
-            subgraph VIZ["📊 Analytics & Visualization"]
-                SRED["Superset Redis"]
-                SUP["Superset<br/>:8088"]
-            end
+            subgraph VIZ["📊 Visualization"]
+                SUP["Superset Dashboard"]
+            </div>
 
-            FW -->|"web-logs"| KB
-            FS -->|"syslogs"| KB
-            FA -->|"app-logs"| KB
-            FE -->|"win-event-logs"| KB
-            KB -->|"Stream Consume"| SM
-            SM --- SW1
-            SM --- SW2
-            SM -->|"Parquet Write"| NN
-            NN --- DN1
-            NN --- DN2
-            HM -->|"Metadata DB"| PG
-            SM -.->|"Schema Registry"| HM
-            HM -.->|"Warehouse location"| NN
-            SUP -->|"SQL Query"| SM
-            SM ==>|"Data Read (Parquet)"| NN
-            SUP -->|"Superset DB"| PG
-            SUP --- SRED
-
-            style FLOG fill:#f8fafc,stroke:#00b894,color:#0f172a
+            KP & Z & W --> KB
+            KB --> SM
+            SM --- SW1 & SW2
+            SM --> NN
+            NN --- DN1 & DN2
+            HM --> PG
+            ZEP --- SM
+            SUP --> HV
+            SUP --> PG
+            SUP --- RD
+            
+            style SOURCES fill:#f8fafc,stroke:#00b894,color:#0f172a
             style KAFKA fill:#f8fafc,stroke:#e17055,color:#0f172a
             style SPARK fill:#f8fafc,stroke:#fdcb6e,color:#0f172a
             style HIVE fill:#f8fafc,stroke:#74b9ff,color:#0f172a
@@ -669,219 +496,95 @@
       </div>
     </section>
 
-    <section class="card">
-      <h3>10) Mikroservis & Konteyner Mimarisi</h3>
-      <div class="tech-grid">
-        <div class="tech-desc">
-          <p>Big Data platformumuz devasa bir <strong>monolit yapı değildir.</strong> Her bir Apache bileşeni birbirinden tamamen izole edilmiş, kendi yaşam döngüsü olan Docker konteynerleri (Mikroservisler) olarak çalışır.</p>
-          <p>Bu bize şu avantajları sağlar:</p>
-          <ul class="presentation-list" style="padding-left:0;">
-            <li><strong>Bağımsız Ölçeklendirme:</strong> Log hacmi artarsa sadece Kafka Broker sayısını (`docker compose scale`) artırabiliriz. Spark veya Hive'ı etkilemez.</li>
-            <li><strong>İzolasyon:</strong> Spark işçisi (worker) %100 CPU tavanına vursa bile Hadoop HDFS'in okuma/yazma performansı etkilenmez.</li>
-            <li><strong>Kolay Dağıtım (Deployment):</strong> `docker-compose.yml` dosyamız altyapının kod (Infrastructure as Code) halidir. Saniyeler içinde tüm cluster ayağa kalkar.</li>
-            <li><strong>Tam Uyum:</strong> Yazılımcının bilgisayarındaki ortam ile gerçek üretim (Production) ortamı birebir aynıdır.</li>
-          </ul>
-        </div>
-        <div style="text-align: center;">
-           <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-             <rect x="20" y="20" width="70" height="70" rx="5" fill="#f0f9ff" stroke="#0284c7" stroke-width="4"/>
-             <rect x="110" y="20" width="70" height="70" rx="5" fill="#f0f9ff" stroke="#0284c7" stroke-width="4"/>
-             <rect x="20" y="110" width="70" height="70" rx="5" fill="#f0f9ff" stroke="#0284c7" stroke-width="4"/>
-             <rect x="110" y="110" width="70" height="70" rx="5" fill="#f0f9ff" stroke="#0284c7" stroke-width="4"/>
-             <!-- Connectors -->
-             <path d="M 90 55 L 110 55" stroke="#94a3b8" stroke-width="3" stroke-dasharray="4,4"/>
-             <path d="M 55 90 L 55 110" stroke="#94a3b8" stroke-width="3" stroke-dasharray="4,4"/>
-             <path d="M 145 90 L 145 110" stroke="#94a3b8" stroke-width="3" stroke-dasharray="4,4"/>
-             <path d="M 90 145 L 110 145" stroke="#94a3b8" stroke-width="3" stroke-dasharray="4,4"/>
-             
-             <!-- Icons inside boxes -->
-             <text x="55" y="62" font-family="sans-serif" font-size="24" font-weight="bold" fill="#0369a1" text-anchor="middle">🐳</text>
-             <text x="145" y="62" font-family="sans-serif" font-size="24" font-weight="bold" fill="#0369a1" text-anchor="middle">🐳</text>
-             <text x="55" y="152" font-family="sans-serif" font-size="24" font-weight="bold" fill="#0369a1" text-anchor="middle">🐳</text>
-             <text x="145" y="152" font-family="sans-serif" font-size="24" font-weight="bold" fill="#0369a1" text-anchor="middle">🐳</text>
-           </svg>
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <h3>11) Servis Dağılımı ve Rol Tablosu</h3>
+    <!-- SLIDE 13: DOCKER SERVICES (TAM LİSTE) -->
+    <section>
+      <h3>11) Docker Microservices: Tüm Servisler</h3>
       <table class="compare-table">
         <thead>
-          <tr>
-            <th>Bileşen</th>
-            <th>Container</th>
-            <th>Görev</th>
-            <th>Öne Çıkan Özellik</th>
-          </tr>
+          <tr><th>Container</th><th>Servis</th><th>Görev</th><th>Hort/Port</th></tr>
         </thead>
         <tbody>
-          <tr>
-            <td>Producers</td>
-            <td>flog (x4)</td>
-            <td>Log Üretimi</td>
-            <td>WinEvent + Web + Sys + App</td>
-          </tr>
-          <tr>
-            <td>Hadoop HDFS</td>
-            <td>namenode, datanode-1, 2</td>
-            <td>Sınırsız Depolama</td>
-            <td>Reliability (Replication)</td>
-          </tr>
-          <tr>
-            <td>Kafka</td>
-            <td>kafka-broker</td>
-            <td>Event Streaming</td>
-            <td>Low Latency (Zero-Copy)</td>
-          </tr>
-          <tr>
-            <td>Spark</td>
-            <td>spark-master, worker-1, 2</td>
-            <td>Real-time ETL</td>
-            <td>Performance (Tungsten)</td>
-          </tr>
-          <tr>
-            <td>Hive</td>
-            <td>hive-server2, metastore</td>
-            <td>SQL Catalog</td>
-            <td>Lakehouse Pattern</td>
-          </tr>
-          <tr>
-            <td>Superset</td>
-            <td>superset</td>
-            <td>SOC Dashboard</td>
-            <td>Interactive Analysis</td>
-          </tr>
+          <tr><td>namenode</td><td>HDFS Master</td><td>Metadata ve Blok Haritası yönetimi</td><td>8020 / 9870</td></tr>
+          <tr><td>datanode-1,2</td><td>HDFS Worker</td><td>Ham veriyi (Parquet) saklar</td><td>9864</td></tr>
+          <tr><td>kafka-broker</td><td>Kafka</td><td>Veri akışı ve tamponlama</td><td>9092</td></tr>
+          <tr><td>spark-master</td><td>Spark Master</td><td>İş planlama ve yönetim</td><td>7077 / 8080</td></tr>
+          <tr><td>spark-worker-1,2</td><td>Spark Worker</td><td>ETL ve ML işlemlerini yapar</td><td>8081 / 8082</td></tr>
+          <tr><td>hive-metastore</td><td>Hive MS</td><td>Tablo şema yönetimi</td><td>9083</td></tr>
+          <tr><td>hiveserver2</td><td>Hive S2</td><td>SQL sorgu motoru</td><td>10000</td></tr>
+          <tr><td>superset</td><td>Superset</td><td>SOC Dashboard ve Analiz</td><td>8088</td></tr>
+          <tr><td>zeppelin</td><td>Zeppelin</td><td>İnteraktif Veri Keşfi</td><td>9090</td></tr>
+          <tr><td>postgres</td><td>Postgres</td><td>Metastore ve Superset veri tabanı</td><td>5432</td></tr>
+          <tr><td>redis</td><td>Redis</td><td>Superset önbellek katmanı</td><td>6379</td></tr>
         </tbody>
       </table>
     </section>
 
-    <section class="card">
-      <h3>12) ETL Mantığı (PySpark)</h3>
+    <!-- SLIDE 14: ETL CODE -->
+    <section>
+      <h3>12) ETL ve Zenginleştirme Kod Mantığı</h3>
       <ul class="presentation-list">
-        <li><strong>Kaynak:</strong> Kafka topic aboneliği: web-logs, syslogs, app-logs, win-event-logs.</li>
-        <li><strong>İşleme:</strong> Regex ile IP, method, path, status; JSON parse ile event/service alanları.</li>
-        <li><strong>Hedef:</strong> Hive tablosu <strong>siem.logs_parsed</strong> ve Parquet formatında kalıcı kayıt.</li>
+        <li><strong>Enrichment:</strong> `country`, `city` ve `threat_intel` alanlarını dinamik ekler.</li>
+        <li><strong>Partitioning:</strong> Veriyi `detect_date` bazlı klasörleyerek hızı artırır.</li>
       </ul>
-      <pre class="code-block">spark.readStream.format("kafka")
-  .option("kafka.bootstrap.servers", "kafka-broker:9092")
-  .option("subscribe", "web-logs,syslogs,app-logs,win-event-logs")
-  .load()
-  
-  # RegExp & JSON field Extraction
-  .withColumn("client_ip", regexp_extract("raw_log", r"^(\\S+)", 1))
-  .withColumn("app_event", json_parsed.getField("event"))
-
-  # Yazma Aşaması
-  .writeStream
-  .foreachBatch(append_to_hive)
-  .start()</pre>
+      <div class="code-block">
+# PySpark ETL Pipeline
+parsed = raw.withColumn("client_ip", extract_ip(col("raw_log")))
+       .withColumn("country", geoip_udf(col("client_ip")))
+       .withColumn("intel_tag", intel_udf(col("client_ip")))
+       .writeStream.partitionBy("detect_date")
+       .foreachBatch(save_and_evaluate_rules).start()
+      </div>
     </section>
 
-    <section class="card">
-      <h3>13) Dağıtık Durum Doğrulama (CLI)</h3>
-      <ul class="presentation-list">
-        <li><strong>HDFS:</strong> <em>hdfs dfsadmin -report</em> çıktısında Live datanodes (2) görünmeli.</li>
-        <li><strong>Kafka:</strong> 4 farklı topic (WinEvent dahil) listede görünmeli.</li>
-        <li><strong>Hive:</strong> Beeline (JDBC) ile sorgular veri dönmeli.</li>
-      </ul>
-      <pre class="code-block" style="font-size:1.1rem"># Hadoop doğrulama
+    <!-- SLIDE 15: VALIDATION -->
+    <section>
+      <h3>13) Dağıtık Durum Doğrulama ve Test</h3>
+      <div class="code-block" style="font-size: 0.9rem;">
+# HDFS Sağlık Raporu
 docker exec -it namenode hdfs dfsadmin -report
 
-# Kafka topic kontrol
-docker exec -it kafka-broker kafka-topics.sh --bootstrap-server kafka-broker:9092 --list
+# Kafka Canlı Topic Takibi
+docker exec -it kafka-broker kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic real_network_logs
 
-# SQL Testi
-docker exec -it hive-server2 /opt/hive/bin/beeline -u jdbc:hive2://localhost:10000 \
-  -e "SELECT source_topic, COUNT(*) FROM siem.logs_parsed GROUP BY source_topic;"</pre>
+# Hive SQL Veri Doğrulama
+docker exec -it hive-server2 beeline -u jdbc:hive2://localhost:10000 \
+  -e "SELECT country, count(*) FROM siem.logs_parsed GROUP BY country;"
+      </div>
     </section>
 
-    <section class="card">
-      <h3>14) Neden Bu Mimari?</h3>
-      <ul class="presentation-list">
-        <li><strong>Vendor lock-in yok:</strong> Tamamen Apache ekosistemi, markaya veya pahalı lisanslara bağımlılık yok.</li>
-        <li><strong>Yatay ölçeklenebilirlik:</strong> Daha çok log geldikçe, sadece yeni Kafka Broker veya yeni Hadoop DataNode eklenir.</li>
-        <li><strong>Lakehouse yaklaşımı:</strong> Aynı platformda (Data Lake) hem stream analitik (gerçek zamanlı alarmlar) hem de SQL tabanlı forensic sorgu.</li>
-        <li><strong>Sıcak/Soğuk Veri Ayrımı Yok:</strong> Loglar devasa HDFS cluster'ı üzerinde olduğu için 3 yıl önceki bir olayı saniyeler içinde SQL ile arayabilirsiniz.</li>
-      </ul>
+    <!-- SLIDE 16: SOC DASHBOARD -->
+    <section>
+      <h3>14) SOC Dashboard: Canlı Analiz</h3>
+      <div class="tech-grid">
+        <div class="tech-desc">
+          <p>Apache Superset SOC Dashboard'umuzun yetenekleri:</p>
+          <ul class="presentation-list">
+            <li><strong>Global Attack Map:</strong> Tehditlerin coğrafi kaynağı.</li>
+            <li><strong>Alerts List:</strong> Ciddiyete göre sıralanmış gerçek zamanlı alarmlar.</li>
+            <li><strong>ML Stability:</strong> NDR modelinin hata payı (WSSSE) takibi.</li>
+            <li><strong>Top Target Ports:</strong> En çok saldırı alan servislerin dökümü.</li>
+          </ul>
+        </div>
+        <div style="background:#f8fafc; height:300px; border-radius:12px; border:2px solid var(--accent); display:flex; align-items:center; justify-content:center;">
+           DASHBOARD PREVIEW (Harita + Alarmlar)
+        </div>
+      </div>
     </section>
 
-    <section class="card">
-      <h3>15) Sonraki Adımlar & Gelişim</h3>
-      <ul class="presentation-list">
-        <li>Kafka cluster'ını 3 broker ve topic replication (çoğaltma) ile yüksek erişilebilir hale getirmek.</li>
-        <li>Spark işine <em>watermark</em> ve pencereleme fonksiyonları ekleyerek kural tabanlı saldırı tespiti yazdırmak.</li>
-        <li>Hive tablolarını yıllık/aylık/günlük (partitioning) stratejisiyle fiziksel olarak optimize etmek.</li>
-        <li><strong>ML Ops:</strong> Makine öğrenmesi modelleri ekleyerek "Anomali Tespiti" (Unsupervised Learning) yapmak.</li>
-      </ul>
-      <p class="presentation-title" style="margin-top:2rem">Kapanış</p>
-      <ul class="presentation-list">
-        <li>Bu proje; gerçek, çok katmanlı, mikroservis odaklı ve üretime taşınabilir bir Büyük Veri Güvenlik altyapısı demosu sunar.</li>
-      </ul>
+    <!-- SLIDE 17: VISION -->
+    <section class="hero">
+      <div class="title">Teşekkürler</div>
+      <div class="subtitle">Apache-BigData-SIEM | Unified SOC & NDR Command Center</div>
     </section>
   </div>
 
-
-
   <script>
-    const sections = Array.from(document.querySelectorAll('.hero, .card'));
-    const progressEl = document.getElementById('progress');
-    const page = document.getElementById('slides');
-
-    function updateProgress() {
-      const scrollTop = page.scrollTop;
-      let activeIndex = 0;
-
-      for (let i = 0; i < sections.length; i += 1) {
-        const top = sections[i].offsetTop;
-        if (scrollTop >= top - window.innerHeight * 0.35) {
-          activeIndex = i;
-        }
-      }
-
-      progressEl.textContent = `Slide ${activeIndex + 1} / ${sections.length}`;
-    }
-
-    function scrollToSlide(direction) {
-      const scrollTop = page.scrollTop;
-      let activeIndex = 0;
-
-      for (let i = 0; i < sections.length; i += 1) {
-        const top = sections[i].offsetTop;
-        if (scrollTop >= top - window.innerHeight * 0.35) {
-          activeIndex = i;
-        }
-      }
-
-      const nextIndex = Math.min(sections.length - 1, Math.max(0, activeIndex + direction));
-      sections[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    window.addEventListener('keydown', (event) => {
-      if (event.key === 'ArrowDown' || event.key === 'PageDown') {
-        event.preventDefault();
-        scrollToSlide(1);
-      }
-      if (event.key === 'ArrowUp' || event.key === 'PageUp') {
-        event.preventDefault();
-        scrollToSlide(-1);
-      }
-      if (event.key === 'Home') {
-        event.preventDefault();
-        sections[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-      if (event.key === 'End') {
-        event.preventDefault();
-        sections[sections.length - 1].scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+    const slides = document.getElementById('slides');
+    const progress = document.getElementById('progress');
+    slides.addEventListener('scroll', () => {
+      const slideIndex = Math.round(slides.scrollTop / window.innerHeight) + 1;
+      progress.innerText = `Slide ${slideIndex} / 17`;
     });
-
-    page.addEventListener('scroll', updateProgress, { passive: true });
-    updateProgress();
   </script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-    <script>
-      mermaid.initialize({ startOnLoad: true, theme: 'default' });
-    </script>
 </body>
 </html>

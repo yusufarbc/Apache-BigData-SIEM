@@ -16,15 +16,19 @@ from pyspark.sql.functions import (
     regexp_extract,
     to_date,
     when,
+    lit,
 )
-from pyspark.sql.types import StringType, StructField, StructType
+from pyspark.sql.types import StringType, StructField, StructType, IntegerType, DoubleType, LongType
 
 # Detection Rules Engine
 from detection_rules import initialize_alerts_table, evaluate_rules
 
+import os
+
 # Configuration Constants
-KAFKA_BOOTSTRAP = "kafka-broker:9092"
-KAFKA_TOPICS = "web-logs,syslogs,app-logs,win-event-logs"
+KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka-broker:9092")
+# Use a regex pattern for topics to avoid errors if some topics don't exist at startup
+KAFKA_TOPICS_PATTERN = "web-logs|syslogs|app-logs|win-event-logs|real_network_logs|dns-logs|ssl-logs|ssh-logs"
 CHECKPOINT_PATH = "hdfs://namenode:8020/tmp/checkpoints/siem_logs_parsed"
 HIVE_TABLE_LOCATION = "hdfs://namenode:8020/user/hive/warehouse/siem.db/logs_parsed"
 
@@ -64,11 +68,15 @@ def initialize_hive_table(spark: SparkSession) -> None:
           syslog_program STRING,
           app_event STRING,
           app_service STRING,
+          country STRING,
+          city STRING,
+          intelligence_tag STRING,
           ingest_ts TIMESTAMP,
-          ingest_date DATE
+          ingest_date DATE,
+          detect_date DATE
         )
         USING PARQUET
-        PARTITIONED BY (ingest_date)
+        PARTITIONED BY (detect_date)
         LOCATION '{HIVE_TABLE_LOCATION}'
         """
     )
@@ -100,6 +108,12 @@ def extract_attributes(logs_df: DataFrame) -> DataFrame:
             StructField("bytes", StringType(), True),
             StructField("referer", StringType(), True),
             StructField("agent", StringType(), True),
+            # Zeek fields
+            StructField("id.orig_h", StringType(), True),
+            StructField("id.resp_h", StringType(), True),
+            StructField("id.resp_p", IntegerType(), True),
+            StructField("proto", StringType(), True),
+            StructField("service", StringType(), True),
         ]
     )
 
@@ -132,12 +146,44 @@ def extract_attributes(logs_df: DataFrame) -> DataFrame:
             .otherwise(col("app_event"))
         )
 
+        # ── Zeek JSON fields (e.g. id.orig_h, id.resp_p) ──
+        .withColumn("client_ip", 
+            when(col("raw_log").contains("id.orig_h"), json_parsed.getField("id.orig_h"))
+            .otherwise(col("client_ip")))
+        .withColumn("status_code", 
+            when(col("raw_log").contains("id.resp_p"), json_parsed.getField("id.resp_p").cast("string"))
+            .otherwise(col("status_code")))
+
+        # ── Enrichment: Simulated GeoIP & Threat Intel ──
+        .withColumn("country", 
+            when(col("client_ip").startswith("192."), "Internal")
+            .when(col("client_ip").startswith("10."), "Internal")
+            .when(col("client_ip").rlike(r"^1[7-8]"), "United States")
+            .when(col("client_ip").rlike(r"^4[0-5]"), "Germany")
+            .when(col("client_ip").rlike(r"^9[0-5]"), "Russia")
+            .when(col("client_ip").rlike(r"^2[1-2]"), "China")
+            .otherwise("Unknown")
+        )
+        .withColumn("city", 
+            when(col("country") == "United States", "New York")
+            .when(col("country") == "Germany", "Frankfurt")
+            .when(col("country") == "Russia", "Moscow")
+            .when(col("country") == "China", "Beijing")
+            .otherwise("Unknown")
+        )
+        .withColumn("intelligence_tag",
+            when(col("client_ip").rlike(r"\.100$"), "Known Malicious IP")
+            .when(col("client_ip").rlike(r"\.200$"), "Tor Exit Node")
+            .otherwise("Clean")
+        )
+
         # ── Ingest timestamps ──
         .withColumn(
             "ingest_ts",
             when(col("kafka_ts").isNotNull(), col("kafka_ts")).otherwise(current_timestamp()),
         )
         .withColumn("ingest_date", to_date(col("ingest_ts")))
+        .withColumn("detect_date", to_date(col("ingest_ts"))) # For partition consistency with alerts
     )
 
     return parsed_df
@@ -166,6 +212,9 @@ def append_to_hive(batch_df: DataFrame, batch_id: int) -> None:
         "syslog_program",
         "app_event",
         "app_service",
+        "country",
+        "city",
+        "intelligence_tag",
         "ingest_ts",
         "ingest_date",
     ]
@@ -198,8 +247,9 @@ def main() -> None:
     raw_stream = (
         spark.readStream.format("kafka")
         .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP)
-        .option("subscribe", KAFKA_TOPICS)
-        .option("startingOffsets", "latest")
+        .option("subscribePattern",        KAFKA_TOPICS_PATTERN)
+        .option("startingOffsets",         os.getenv("KAFKA_STARTING_OFFSETS", "earliest"))
+        .option("failOnDataLoss",          "false")
         .load()
     )
 

@@ -1,0 +1,57 @@
+{
+  "paragraphs": [
+    {
+      "title": "Step 0 - Spark Session and Libraries",
+      "text": "%spark.pyspark\nfrom pyspark.ml.clustering import KMeans\nfrom pyspark.ml.feature import VectorAssembler, StandardScaler\nfrom pyspark.sql.functions import udf, col, when, from_json, current_timestamp\nfrom pyspark.sql.types import (\n    FloatType, StructType, StructField,\n    IntegerType, DoubleType, LongType, StringType, BooleanType\n)\nimport math\n\nprint(f'Spark version: {spark.version}')\nprint(f'SparkContext: {sc.master}')\nprint('Libraries loaded OK.')",
+      "user": "anonymous",
+      "dateUpdated": "2026-05-16T00:00:00+0000",
+      "progress": 0,
+      "config": {"editorSetting": {"language": "python"}, "colWidth": 12, "enabled": true},
+      "settings": {"params": {}, "forms": {}},
+      "id": "paragraph_step0"
+    },
+    {
+      "title": "Step 1 - Cold Start: Baseline K-Means Training",
+      "text": "%spark.pyspark\n# Cold Start - model learns normal network behavior from conn.log\n\nCONN_LOG = '/opt/zeppelin/data/conn.log'\nFEATURE_COLS = ['dest_port', 'duration', 'orig_bytes', 'resp_bytes']\n\nfrom pyspark.sql.functions import col as scol\nfrom pyspark.sql.types import LongType, DoubleType, IntegerType\n\nraw_df = (\n    spark.read\n    .option('sep', '\\t')\n    .option('comment', '#')\n    .option('header', 'false')\n    .csv(CONN_LOG)\n)\n\nZEEK_COLS = [\n    'ts','uid','src_ip','src_port','dest_ip','dest_port',\n    'proto','service','duration','orig_bytes','resp_bytes','conn_state'\n]\ncol_count = len(raw_df.columns)\nmapping = {f'_c{i}': ZEEK_COLS[i] for i in range(min(col_count, len(ZEEK_COLS)))}\nbaseline_df = raw_df.toDF(*[mapping.get(f'_c{i}', f'_c{i}') for i in range(col_count)])\n\nbaseline_df = (\n    baseline_df\n    .withColumn('dest_port',  scol('dest_port').cast(IntegerType()))\n    .withColumn('duration',   scol('duration').cast(DoubleType()))\n    .withColumn('orig_bytes', scol('orig_bytes').cast(LongType()))\n    .withColumn('resp_bytes', scol('resp_bytes').cast(LongType()))\n    .na.drop(subset=FEATURE_COLS)\n    .limit(10000)\n)\n\nprint(f'Cold-start data size: {baseline_df.count():,} rows')\n\nassembler = VectorAssembler(\n    inputCols=FEATURE_COLS,\n    outputCol='raw_features',\n    handleInvalid='skip'\n)\nvectorized = assembler.transform(baseline_df)\n\nscaler = StandardScaler(\n    inputCol='raw_features',\n    outputCol='scaled_features',\n    withStd=True, withMean=True\n)\nscaler_model = scaler.fit(vectorized)\nscaled_baseline = scaler_model.transform(vectorized)\n\nkmeans = (\n    KMeans()\n    .setK(8)\n    .setSeed(42)\n    .setMaxIter(20)\n    .setFeaturesCol('scaled_features')\n    .setPredictionCol('cluster_id')\n)\nkmeans_model = kmeans.fit(scaled_baseline)\ncentroids = kmeans_model.clusterCenters()\n\nprint(f'Cold-start complete. {len(centroids)} cluster centers created.')\nprint(f'WSSSE: {kmeans_model.summary.trainingCost:.4f}')\nfor i, c in enumerate(centroids):\n    print(f'  Centroid[{i}]: {[round(v,3) for v in c[:4]]}')",
+      "user": "anonymous",
+      "dateUpdated": "2026-05-16T00:00:00+0000",
+      "progress": 0,
+      "config": {"editorSetting": {"language": "python"}, "colWidth": 12, "enabled": true},
+      "settings": {"params": {}, "forms": {}},
+      "id": "paragraph_step1"
+    },
+    {
+      "title": "Step 2 - Streaming K-Means: Detection and Continuous Learning",
+      "text": "%spark.pyspark\n# Streaming - score live Kafka data and continuously update the model\n\nANOMALY_THRESHOLD = 2.0\nKAFKA_BOOTSTRAP   = 'kafka-broker:9092'\nKAFKA_TOPIC       = 'real_network_logs'\nCHECKPOINT_PATH   = 'hdfs://namenode:8020/tmp/checkpoints/zeppelin_kmeans'\nALERTS_PATH       = 'hdfs://namenode:8020/user/hive/warehouse/siem.db/network_anomalies'\n\nndr_schema = StructType([\n    StructField('id.resp_p',  IntegerType(), True),\n    StructField('duration',   DoubleType(),  True),\n    StructField('orig_bytes', LongType(),    True),\n    StructField('resp_bytes', LongType(),    True),\n    StructField('id.orig_h',  StringType(),  True),\n    StructField('id.resp_h',  StringType(),  True),\n    StructField('proto',      StringType(),  True),\n    StructField('conn_state', StringType(),  True),\n])\n\nkafka_stream = (\n    spark.readStream\n    .format('kafka')\n    .option('kafka.bootstrap.servers', KAFKA_BOOTSTRAP)\n    .option('subscribePattern', KAFKA_TOPIC)\n    .option('startingOffsets', 'earliest')\n    .option('maxOffsetsPerTrigger', '2000')\n    .option('failOnDataLoss', 'false')\n    .load()\n)\n\nparsed_stream = (\n    kafka_stream\n    .selectExpr('CAST(value AS STRING) as json_val')\n    .select(from_json(col('json_val'), ndr_schema).alias('d'))\n    .select(\n        col('d.duration'),\n        col('d.orig_bytes'),\n        col('d.resp_bytes'),\n        col('d.`id.orig_h`').alias('src_ip'),\n        col('d.`id.resp_h`').alias('dest_ip'),\n        col('d.`id.resp_p`').alias('dest_port'),\n        col('d.proto'),\n        col('d.conn_state')\n    )\n    .na.drop(subset=['dest_port', 'duration', 'orig_bytes', 'resp_bytes'])\n)\n\nassembler = VectorAssembler(\n    inputCols=['dest_port', 'duration', 'orig_bytes', 'resp_bytes'],\n    outputCol='raw_features',\n    handleInvalid='skip'\n)\n\nvectorized_stream = assembler.transform(parsed_stream)\nscaled_stream     = scaler_model.transform(vectorized_stream)\n\ndef process_and_learn(batch_df, batch_id):\n    global kmeans_model, centroids\n    count = batch_df.count()\n    if count == 0:\n        return\n    predictions = kmeans_model.transform(batch_df)\n    import json as _json\n    _centroids_json = _json.dumps([c.tolist() for c in centroids])\n    @udf(FloatType())\n    def distance_udf(features, cluster_id):\n        import json, math\n        cents = json.loads(_centroids_json)\n        c = cents[cluster_id]\n        arr = features.toArray() if hasattr(features, 'toArray') else list(features)\n        return float(math.sqrt(sum((a - b) ** 2 for a, b in zip(arr, c))))\n    scored = (\n        predictions\n        .withColumn('anomaly_score', distance_udf(col('scaled_features'), col('cluster_id')))\n        .withColumn('is_anomaly', col('anomaly_score') > ANOMALY_THRESHOLD)\n        .withColumn('ingest_ts', current_timestamp())\n    )\n    anomalies = scored.filter(col('is_anomaly') == True)\n    n_anomaly = anomalies.count()\n    if n_anomaly > 0:\n        anomalies.write.mode('append').parquet(ALERTS_PATH)\n    print(f'Batch {batch_id:4d} | {count:5,} rows | {n_anomaly:4} anomalies')\n    if count >= 100:\n        kmeans_model = kmeans.fit(batch_df)\n        centroids = kmeans_model.clusterCenters()\n        print(f'  Model updated. New WSSSE: {kmeans_model.summary.trainingCost:.4f}')\n\nquery = (\n    scaled_stream.writeStream\n    .outputMode('append')\n    .option('checkpointLocation', CHECKPOINT_PATH)\n    .trigger(processingTime='10 seconds')\n    .foreachBatch(process_and_learn)\n    .start()\n)\n\nprint('Streaming K-Means started.')\nprint(f'Kafka topic  : {KAFKA_TOPIC}')\nprint(f'Threshold    : {ANOMALY_THRESHOLD}')\nprint('To stop: query.stop()')",
+      "user": "anonymous",
+      "dateUpdated": "2026-05-16T00:00:00+0000",
+      "progress": 0,
+      "config": {"editorSetting": {"language": "python"}, "colWidth": 12, "enabled": true},
+      "settings": {"params": {}, "forms": {}},
+      "id": "paragraph_step2"
+    },
+    {
+      "title": "Step 3 - Attack Injection Demo",
+      "text": "%spark.pyspark\n# Demo: inject fake attack packets into Kafka to test anomaly detection\nfrom kafka import KafkaProducer\nimport json, random, time\n\nATTACK_TYPES = ['portscan', 'exfiltration', 'ddos']\n\ndef _rnd_ip():\n    return f'{random.randint(10,192)}.{random.randint(0,255)}.{random.randint(0,255)}.{random.randint(1,254)}'\n\ndef make_attack(attack_type):\n    if attack_type == 'portscan':\n        return {'id.resp_p': random.randint(1,1024), 'duration': round(random.uniform(0.0001,0.005),6),\n                'orig_bytes': 50, 'resp_bytes': 0, 'id.orig_h': '192.168.100.1',\n                'id.resp_h': _rnd_ip(), 'proto': 'tcp', 'conn_state': 'REJ'}\n    elif attack_type == 'exfiltration':\n        return {'id.resp_p': 443, 'duration': round(random.uniform(600,7200),1),\n                'orig_bytes': random.randint(10000000, 100000000), 'resp_bytes': random.randint(100,500),\n                'id.orig_h': '10.0.0.50', 'id.resp_h': _rnd_ip(), 'proto': 'tcp', 'conn_state': 'SF'}\n    else:\n        return {'id.resp_p': 80, 'duration': round(random.uniform(0.001,0.3),4),\n                'orig_bytes': random.randint(60,200), 'resp_bytes': 0,\n                'id.orig_h': _rnd_ip(), 'id.resp_h': '10.0.0.1', 'proto': 'tcp', 'conn_state': 'S0'}\n\nkp = KafkaProducer(\n    bootstrap_servers='kafka-broker:9092',\n    value_serializer=lambda v: json.dumps(v).encode('utf-8')\n)\nfor attack_type in ATTACK_TYPES:\n    print(f'Injecting: {attack_type.upper()} (200 packets)...')\n    for _ in range(200):\n        kp.send('real_network_logs', make_attack(attack_type))\n        time.sleep(0.01)\n    print(f'  {attack_type} done.')\nkp.flush()\nprint('All attacks injected into Kafka!')",
+      "user": "anonymous",
+      "dateUpdated": "2026-05-16T00:00:00+0000",
+      "progress": 0,
+      "config": {"editorSetting": {"language": "python"}, "colWidth": 12, "enabled": true},
+      "settings": {"params": {}, "forms": {}},
+      "id": "paragraph_step3"
+    }
+  ],
+  "name": "NDR_Streaming_KMeans",
+  "id": "NDR_STREAMING_KMEANS_001",
+  "defaultInterpreterGroup": "spark",
+  "version": "0.11.1",
+  "noteParams": {},
+  "noteForms": {},
+  "angularObjects": {},
+  "config": {
+    "isZeppelinNotebookCronEnable": false,
+    "looknfeel": "default",
+    "personalizedMode": "false"
+  },
+  "info": {}
+}

@@ -9,7 +9,7 @@ x-hadoop-volumes: &hadoop-volumes
   - ./config/hadoop/hdfs-site.xml:/etc/hadoop/hdfs-site.xml:ro
 
 x-spark-common: &spark-common
-  image: bitnamilegacy/spark:3.5.6-debian-12-r1
+  build: ./docker/spark
   restart: unless-stopped
   networks:
     - siem-network
@@ -22,23 +22,18 @@ x-spark-common: &spark-common
 x-spark-worker-env: &spark-worker-env
   SPARK_MODE: worker
   SPARK_MASTER_URL: spark://spark-master:7077
-  SPARK_WORKER_MEMORY: 2G
-  SPARK_WORKER_CORES: "2"
+  SPARK_WORKER_MEMORY: 16G
+  SPARK_WORKER_CORES: "8"
   SPARK_NO_DAEMONIZE: "yes"
   SPARK_CONF_DIR: /opt/bitnami/spark/conf
 
-x-flog-common: &flog-common
+x-producer-common: &producer-common
   build:
-    context: ./flog
+    context: ./docker/kafka-producer
     dockerfile: Dockerfile
   restart: unless-stopped
   networks:
     - siem-network
-
-x-flog-env: &flog-env
-  KAFKA_BOOTSTRAP_SERVERS: kafka-broker:9092
-  BATCH_SIZE: "2000"
-  LOOP_DELAY: "1"
 
 # ══════════════════════════════════════════════════════════════
 # Networks & Volumes
@@ -57,11 +52,12 @@ volumes:
   kafka-data:
   hive-warehouse:
   superset_data:
+  zeppelin-data:
+  zeppelin-logs:
 
-
-# ══════════════════════════════════════════════════════════════
-# Services
-# ══════════════════════════════════════════════════════════════
+    # ══════════════════════════════════════════════════════════════
+    # Services
+    # ══════════════════════════════════════════════════════════════
 
 services:
 
@@ -87,7 +83,7 @@ services:
       - ./config/hadoop/core-site.xml:/etc/hadoop/core-site.xml:ro
       - ./config/hadoop/hdfs-site.xml:/etc/hadoop/hdfs-site.xml:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9870/dfshealth.html || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://localhost:9870/dfshealth.html || exit 1" ]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -143,6 +139,43 @@ services:
       - siem-network
 
   # ─────────────────────────────────────────────────────────
+  # HDFS Initialization — Auto-upload data on startup
+  # ─────────────────────────────────────────────────────────
+  hdfs-init:
+    image: bde2020/hadoop-base:2.0.0-hadoop3.2.1-java8
+    container_name: hdfs-init
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    volumes:
+      - ./data:/data:ro
+    entrypoint: [ "/bin/bash", "-c" ]
+    command:
+      - |
+        /entrypoint.sh echo "[NDR] Hadoop ayarları yüklendi."
+        echo '[NDR] Başlatılıyor...'
+        until hdfs dfs -ls / > /dev/null 2>&1; do
+          echo '[NDR] HDFS (namenode:8020) hazır değil, bekleniyor...'
+          sleep 5
+        done
+        echo '[NDR] HDFS hazır! Dizin kontrol ediliyor...'
+        hdfs dfs -mkdir -p /opt/zeppelin/data
+        if hdfs dfs -test -e /opt/zeppelin/data/conn.log; then
+          echo '[NDR] Dosya zaten HDFS üzerinde mevcut.'
+        else
+          echo '[NDR] Dosya yükleniyor: /data/conn.log -> /opt/zeppelin/data/conn.log'
+          hdfs dfs -put /data/conn.log /opt/zeppelin/data/conn.log
+          echo '[NDR] Yükleme tamamlandı!'
+        fi
+        echo '[NDR] Hive tabloları kontrol ediliyor...'
+        # Hive tablolarını tamir et ki yeni veriler Superset'te görünsün
+        /entrypoint.sh hdfs dfs -ls /user/hive/warehouse/siem.db/network_anomalies > /dev/null 2>&1
+    depends_on:
+      namenode:
+        condition: service_healthy
+    networks:
+      - siem-network
+
+  # ─────────────────────────────────────────────────────────
   # PostgreSQL — Unified Database (Hive Metastore + Superset)
   # ─────────────────────────────────────────────────────────
 
@@ -158,7 +191,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - ./config/postgres/init-superset-db.sh:/docker-entrypoint-initdb.d/init-superset-db.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hive -d metastore"]
+      test: [ "CMD-SHELL", "pg_isready -U hive -d metastore" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -180,13 +213,11 @@ services:
     environment:
       SERVICE_NAME: metastore
       DB_DRIVER: postgres
-      IS_RESUME: "true"
+      IS_RESUME: "false"
       SERVICE_OPTS: >-
-        -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
-        -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://postgres:5432/metastore
-        -Djavax.jdo.option.ConnectionUserName=hive
-        -Djavax.jdo.option.ConnectionPassword=hivepass
+        -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://postgres:5432/metastore -Djavax.jdo.option.ConnectionUserName=hive -Djavax.jdo.option.ConnectionPassword=hivepass
       HADOOP_HEAPSIZE: "1024"
+      SKIP_SCHEMA_INIT: "false"
     depends_on:
       postgres:
         condition: service_healthy
@@ -204,10 +235,15 @@ services:
       - ./config/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
       - ./config/hadoop/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
       - ./config/hive/postgresql-42.7.3.jar:/opt/hive/lib/postgresql-42.7.3.jar:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/9083'" ]
+      interval: 15s
+      timeout: 10s
+      retries: 20
     deploy:
       resources:
         limits:
-          memory: 1536M
+          memory: 2G
     networks:
       - siem-network
 
@@ -220,15 +256,11 @@ services:
       DB_DRIVER: postgres
       IS_RESUME: "true"
       SERVICE_OPTS: >-
-        -Dhive.metastore.uris=thrift://hive-metastore:9083
-        -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
-        -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://postgres:5432/metastore
-        -Djavax.jdo.option.ConnectionUserName=hive
-        -Djavax.jdo.option.ConnectionPassword=hivepass
+        -Dhive.metastore.uris=thrift://hive-metastore:9083 -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://postgres:5432/metastore -Djavax.jdo.option.ConnectionUserName=hive -Djavax.jdo.option.ConnectionPassword=hivepass
       HIVE_SERVER2_THRIFT_PORT: "10000"
     depends_on:
       hive-metastore:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "10001:10000"
       - "10002:10002"
@@ -278,14 +310,14 @@ services:
     volumes:
       - kafka-data:/bitnami/kafka
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      test: [ "CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1" ]
       interval: 15s
       timeout: 10s
       retries: 10
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 4G
     networks:
       - siem-network
 
@@ -308,17 +340,12 @@ services:
       SPARK_SSL_ENABLED: "no"
       SPARK_CONF_DIR: /opt/bitnami/spark/conf
     command: >
-      /bin/bash -c "
-      /opt/bitnami/scripts/spark/run.sh &
-      sleep 10 &&
-      /opt/bitnami/spark/sbin/start-thriftserver.sh --master spark://spark-master:7077 --hiveconf hive.server2.thrift.port=10000 --conf spark.cores.max=2 &&
-      wait
-      "
+      /bin/bash -c " /opt/bitnami/scripts/spark/run.sh & sleep 10 && /opt/bitnami/spark/sbin/start-thriftserver.sh --master spark://spark-master:7077 --hiveconf hive.server2.thrift.port=10000 --conf spark.cores.max=2 && wait "
     depends_on:
       kafka-broker:
         condition: service_healthy
       hive-metastore:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8080:8080"
       - "7077:7077"
@@ -330,14 +357,14 @@ services:
       - ./config/hive/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml:ro
       - ./jobs:/opt/bitnami/spark/jobs
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://localhost:8080/ || exit 1" ]
       interval: 15s
       timeout: 10s
       retries: 5
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 16G
 
   spark-worker-1:
     <<: *spark-common
@@ -353,8 +380,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 3G
-          cpus: "2.0"
+          memory: 16G
+          cpus: "4.0"
 
   spark-worker-2:
     <<: *spark-common
@@ -370,8 +397,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 3G
-          cpus: "2.0"
+          memory: 16G
+          cpus: "4.0"
 
   # ─────────────────────────────────────────────────────────
   # Spark ETL — Auto-submit Streaming Job
@@ -388,10 +415,8 @@ services:
     depends_on:
       spark-master:
         condition: service_healthy
-      spark-worker-1:
-        condition: service_started
-      spark-worker-2:
-        condition: service_started
+      hive-metastore:
+        condition: service_healthy
       kafka-broker:
         condition: service_healthy
     volumes:
@@ -404,8 +429,9 @@ services:
       spark-submit
         --master spark://spark-master:7077
         --conf spark.jars.ivy=/tmp/.ivy2
-        --conf spark.cores.max=2
+        --conf spark.cores.max=1
         --conf spark.executor.memory=1g
+        --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6
         /opt/bitnami/spark/jobs/etl_process.py
     deploy:
       resources:
@@ -413,68 +439,78 @@ services:
           memory: 1G
 
   # ─────────────────────────────────────────────────────────
-  # Flog — Log Generators
+  # Kafka Producer — Real Network Log Simulator
+  # Streams Zeek conn.log / Suricata eve.json → Kafka
+  # Mount a real dataset:  -v /path/to/conn.log:/data/conn.log
+  # Without a mount, synthetic Zeek-compatible data is generated.
   # ─────────────────────────────────────────────────────────
 
-  flog-web:
-    <<: *flog-common
-    container_name: flog-web
+  kafka-producer:
+    <<: *producer-common
+    container_name: kafka-producer
     environment:
-      <<: *flog-env
-      KAFKA_TOPIC: web-logs
-      LOG_PROFILE: web
+      KAFKA_BOOTSTRAP_SERVERS: kafka-broker:9092
+      KAFKA_TOPIC: real_network_logs
+      RECORDS_PER_SECOND: "1000"
+      DATA_FILE: /data/conn.log
+      LOG_FORMAT: auto
+      LOOP: "true"
+    volumes:
+      # Optional: mount a real Zeek/Suricata dataset
+      - ./data:/data:ro
+      - ./docker/kafka-producer/kafka_producer.py:/app/kafka_producer.py:ro
     depends_on:
       kafka-broker:
         condition: service_healthy
-      spark-worker-1:
-        condition: service_started
-      spark-worker-2:
-        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
-  flog-syslog:
-    <<: *flog-common
-    container_name: flog-syslog
-    environment:
-      <<: *flog-env
-      KAFKA_TOPIC: syslogs
-      LOG_PROFILE: syslog
-    depends_on:
-      kafka-broker:
-        condition: service_healthy
-      spark-worker-1:
-        condition: service_started
-      spark-worker-2:
-        condition: service_started
+  # ─────────────────────────────────────────────────────────
+  # NDR K-Means Detector — Spark Streaming Anomaly Engine
+  # ─────────────────────────────────────────────────────────
 
-  flog-app:
-    <<: *flog-common
-    container_name: flog-app
+  ndr-kmeans:
+    <<: *spark-common
+    container_name: ndr-kmeans
+    restart: on-failure
     environment:
-      <<: *flog-env
-      KAFKA_TOPIC: app-logs
-      LOG_PROFILE: json
+      SPARK_MODE: ""
+      SPARK_CONF_DIR: /opt/bitnami/spark/conf
+      HOME: /tmp
+      # K-Means tuning
+      KMEANS_K: "8"
+      KMEANS_MAX_ITER: "20"
+      COLD_START_ROWS: "100"
+      ANOMALY_THRESHOLD: "0.5"
+      KAFKA_TOPIC_IN: real_network_logs
+      KAFKA_STARTING_OFFSETS: earliest
     depends_on:
-      kafka-broker:
+      spark-master:
         condition: service_healthy
-      spark-worker-1:
-        condition: service_started
-      spark-worker-2:
-        condition: service_started
-
-  flog-winevent:
-    <<: *flog-common
-    container_name: flog-winevent
-    environment:
-      <<: *flog-env
-      KAFKA_TOPIC: win-event-logs
-      LOG_PROFILE: winevent
-    depends_on:
-      kafka-broker:
+      hive-metastore:
         condition: service_healthy
-      spark-worker-1:
+      kafka-producer:
         condition: service_started
-      spark-worker-2:
-        condition: service_started
+    volumes:
+      - ./config/spark/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf:ro
+      - ./config/hadoop/core-site.xml:/opt/bitnami/spark/conf/core-site.xml:ro
+      - ./config/hadoop/hdfs-site.xml:/opt/bitnami/spark/conf/hdfs-site.xml:ro
+      - ./config/hive/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml:ro
+      - ./jobs:/opt/bitnami/spark/jobs
+    command: >
+      spark-submit
+        --master spark://spark-master:7077
+        --conf spark.jars.ivy=/tmp/.ivy2
+        --conf spark.cores.max=1
+        --conf spark.executor.memory=1500m
+        --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6
+        /opt/bitnami/spark/jobs/streaming_kmeans.py
+    deploy:
+      resources:
+        limits:
+          memory: 2G
 
   # ─────────────────────────────────────────────────────────
   # Superset — Analytics & Dashboards
@@ -487,7 +523,7 @@ services:
     networks:
       - siem-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -513,6 +549,10 @@ services:
       REDIS_BROKER_URL: redis://superset-redis:6379/0
       REDIS_RESULTS_DB: "1"
       REDIS_CACHE_DB: "2"
+      # Sorgu sürelerini uzatıyoruz
+      SUPERSET_WEBSERVER_TIMEOUT: 300
+      SQLLAB_TIMEOUT: 300
+      SUPERSET_DASHBOARD_PERIODICAL_REFRESH_TIMEOUT: 300
     ports:
       - "8088:8088"
     networks:
@@ -525,7 +565,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 8G
 
   # ─────────────────────────────────────────────────────────
   # RStudio — Data Analysis with Sparklyr
@@ -547,4 +587,50 @@ services:
     networks:
       - siem-network
 
+  # ─────────────────────────────────────────────────────────
+  # Apache Zeppelin — Notebook (Python3 / PySpark / Spark SQL)
+  # http://localhost:9090
+  # ─────────────────────────────────────────────────────────
 
+  zeppelin:
+    build: ./docker/zeppelin
+    container_name: zeppelin
+    restart: unless-stopped
+    environment:
+      # Spark kurulumu Dockerfile'da /opt/spark altında
+      SPARK_HOME: /opt/spark
+      SPARK_MASTER: spark://spark-master:7077
+      MASTER: spark://spark-master:7077
+      ZEPPELIN_ADDR: 0.0.0.0
+      ZEPPELIN_PORT: "8080"
+      PYSPARK_PYTHON: python3
+      PYSPARK_DRIVER_PYTHON: python3
+      SPARK_SUBMIT_OPTIONS: >-
+        --master spark://spark-master:7077 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6 --conf spark.hadoop.fs.defaultFS=hdfs://namenode:8020 --conf spark.hadoop.hive.metastore.uris=thrift://hive-metastore:9083 --conf spark.sql.catalogImplementation=hive --conf spark.cores.max=2 --conf spark.executor.memory=2g
+      HADOOP_CONF_DIR: /opt/zeppelin/conf/hadoop
+    ports:
+      - "9090:8080"
+    volumes:
+      - zeppelin-data:/opt/zeppelin/notebook
+      - zeppelin-logs:/opt/zeppelin/logs
+      # NDR notebook auto-import için kaynak (senin koyduğun yer)
+      - ./docker/zeppelin:/opt/zeppelin/notebook_import:ro
+      - ./config/hadoop/core-site.xml:/opt/zeppelin/conf/hadoop/core-site.xml:ro
+      - ./config/hadoop/hdfs-site.xml:/opt/zeppelin/conf/hadoop/hdfs-site.xml:ro
+      - ./config/hive/hive-site.xml:/opt/zeppelin/conf/hadoop/hive-site.xml:ro
+      - ./config/spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
+      - ./data:/opt/zeppelin/data:ro
+      - ./jobs:/opt/zeppelin/jobs:ro
+    depends_on:
+      spark-master:
+        condition: service_healthy
+      kafka-broker:
+        condition: service_healthy
+      hive-metastore:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+    networks:
+      - siem-network
