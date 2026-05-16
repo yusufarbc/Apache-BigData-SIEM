@@ -31,6 +31,7 @@ The platform follows a modern **Lakehouse** architecture, ensuring real-time pro
 
 ```mermaid
 graph TD
+<<<<<<< HEAD
     subgraph SOURCES["📡 Data Sources"]
         ZP["Zeek / Suricata Logs"]
     end
@@ -43,6 +44,16 @@ graph TD
     subgraph SPARK["⚙️ Unified Engine"]
         SM["Spark Master<br/><i>ETL + NDR ML</i>"]
         SW["Spark Workers"]
+=======
+    subgraph KAFKA["📨 Messaging Layer"]
+        KB["Kafka Broker<br/><b>KRaft Mode</b><br/>:9092"]
+    end
+
+    subgraph SPARK["⚙️ Processing Layer (Spark)"]
+        SM["Spark Master<br/>:8080 · :7077 · :10000"]
+        SW1["Spark Worker 1<br/>16G RAM · 8 Cores<br/>:8081"]
+        SW2["Spark Worker 2<br/>16G RAM · 8 Cores<br/>:8082"]
+>>>>>>> eebf21c4a645bedf6eae334a95946c70ebfc2d6f
     end
 
     subgraph LAKE["💾 Lakehouse Layer"]
