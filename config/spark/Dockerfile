@@ -4,7 +4,7 @@ USER root
 
 # Spark ML libleri icin gerekli olan numpy kurulumu
 RUN apt-get update && \
-    apt-get install -y python3-pip && \
+    apt-get install -y python3-pip curl && \
     pip3 install numpy --break-system-packages && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*

@@ -1,163 +1,97 @@
-# Apache-BigData-SIEM 🛡️🏛️
+# Apache SIEM & NDR Unified Command Center 🛡️
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
+**Apache-BigData-SIEM** is a state-of-the-art **Data Lakehouse** platform designed for high-throughput security analytics and AI-driven **Network Detection & Response (NDR)**. It integrates the power of Apache Spark's Machine Learning with the massive scalability of HDFS and Hive.
 
-**Apache-BigData-SIEM** is a high-performance, scalable security analytics platform designed to overcome the volume and cost limitations of traditional SIEM solutions. By leveraging a **Data Lakehouse** architecture, it provides both real-time stream processing and deep historical forensic capabilities.
+---
 
-Please check our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) if you wish to help improve this project!
+## 🏗️ Architecture & Core Components
 
-## 🚀 Architectural Overview
-The project implements a modern Lakehouse pattern to ensure data is processed instantly and stored in an optimized format for long-term security analysis.
+The platform follows a modern **Lakehouse** architecture, ensuring real-time processing and long-term forensic storage:
 
-* **Ingestion:** **Apache Kafka** — Distributed message buffer handling high Events Per Second (EPS) bursts.
-* **Processing:** **Apache Spark Streaming** — Real-time log parsing (Regex + JSON), normalization, and correlation.
-* **Cataloging:** **Apache Hive** — Structured SQL interface over unstructured log data in HDFS.
-* **Storage:** **Apache Hadoop (HDFS)** — Data Lake backbone, storing logs in **Apache Parquet** format.
-* **Visualization:** **Apache Superset** — SOC dashboards, SQL Lab, and scheduled alerts.
+### 1. Ingestion Layer (Kafka)
+- **Kafka Producer:** A multi-threaded engine capable of capturing and streaming Zeek/Suricata logs in parallel.
+- **Kafka Broker:** High-availability messaging backbone for all incoming network flows.
 
-### Platform Architecture Diagram
+### 2. Processing & ML Engine (Spark Unified)
+- **Real-time ETL:** Automated parsing, normalization, and HDFS sink for raw network logs.
+- **NDR K-Means:** A streaming Machine Learning engine that scores every flow for anomalies in real-time.
+- **Unified Master:** Centralized orchestration of all SIEM pipelines for maximum resource efficiency.
 
-<!-- ARCHITECTURE_DIAGRAM_START -->
+### 3. Storage Layer (HDFS & Hive)
+- **HDFS Data Lake:** Distributed forensic storage for petabyte-scale log retention.
+- **Hive Metastore:** Centralized schema management for unified access across Spark, Zeppelin, and Superset.
+
+### 4. Command Center & Insights
+- **Apache Superset:** The primary **SOC Command Center**. It provides a real-time, interactive dashboard for security analysts to monitor incident feeds, global threat maps, and anomalous traffic patterns.
+- **Apache Zeppelin:** The **Cyber Research Lab**. A collaborative notebook environment for threat hunters and data scientists to perform forensic deep-dives, tune K-Means models, and query the HDFS Data Lake using SQL and Python.
+
+---
+
+## 📊 Platform Architecture Diagram
+
 ```mermaid
 graph TD
-    subgraph FLOG["📡 Log Generators (Flog)"]
-        FW["Flog Web<br/><i>web-logs</i>"]
-        FS["Flog Syslog<br/><i>syslogs</i>"]
-        FA["Flog App<br/><i>app-logs</i>"]
+    subgraph SOURCES["📡 Data Sources"]
+        ZP["Zeek / Suricata Logs"]
     end
 
-    subgraph KAFKA["📨 Messaging Layer"]
-        KB["Kafka Broker<br/><b>KRaft Mode</b><br/>:9092"]
+    subgraph KAFKA["📨 Ingestion Layer"]
+        KP["Kafka Producer (High Speed)"]
+        KB["Kafka Broker (Message Hub)"]
     end
 
-    subgraph SPARK["⚙️ Processing Layer (Spark)"]
-        SM["Spark Master<br/>:8080 · :7077 · :10000"]
-        SW1["Spark Worker 1<br/>2G RAM · 2 Cores<br/>:8081"]
-        SW2["Spark Worker 2<br/>2G RAM · 2 Cores<br/>:8082"]
+    subgraph SPARK["⚙️ Unified Engine"]
+        SM["Spark Master<br/><i>ETL + NDR ML</i>"]
+        SW["Spark Workers"]
     end
 
-    subgraph HIVE["🗂️ Data Cataloging (Hive)"]
-        HM["Hive Metastore<br/>:9083"]
-        HS2["Hive Server2<br/>:10001 · :10002"]
+    subgraph LAKE["💾 Lakehouse Layer"]
+        NN["HDFS NameNode"]
+        HM["Hive Metastore"]
+        PG["PostgreSQL (Metadata)"]
     end
 
-    subgraph HDFS["💾 Distributed Storage (HDFS)"]
-        NN["Namenode<br/>:9870 · :8020"]
-        DN1["Datanode 1"]
-        DN2["Datanode 2"]
+    subgraph VIZ["📊 SOC Command Center"]
+        SUP["Superset Dashboard"]
+        ZEP["Zeppelin Lab"]
     end
 
-    subgraph DB["🗄️ Unified Database"]
-        PG[("Postgres")]
-    end
-
-    subgraph VIZ["📊 Analytics & Visualization"]
-        SRED["Superset Redis"]
-        SUP["Superset<br/>:8088"]
-    end
-
-    FW -->|"web-logs"| KB
-    FS -->|"syslogs"| KB
-    FA -->|"app-logs"| KB
-    KB -->|"Stream Consume"| SM
-    SM --- SW1
-    SM --- SW2
-    SM -->|"Parquet Write"| NN
-    NN --- DN1
-    NN --- DN2
-    HM -->|"Metadata"| PG
-    HS2 -->|"Thrift"| HM
-    SM -.->|"Schema Registry"| HM
-    SUP -->|"Superset DB"| PG
-    SUP -->|"SQL Query"| HS2
-    SUP --- SRED
-
-    style FLOG fill:#f8fafc,stroke:#00b894,color:#0f172a
-    style KAFKA fill:#f8fafc,stroke:#e17055,color:#0f172a
-    style SPARK fill:#f8fafc,stroke:#fdcb6e,color:#0f172a
-    style HIVE fill:#f8fafc,stroke:#74b9ff,color:#0f172a
-    style HDFS fill:#f8fafc,stroke:#a29bfe,color:#0f172a
-    style DB fill:#f8fafc,stroke:#636e72,color:#0f172a
-    style VIZ fill:#f8fafc,stroke:#fd79a8,color:#0f172a
-```
-<!-- ARCHITECTURE_DIAGRAM_END -->
-
-## 💡 Key Features
-- **Real-time Threat Detection:** Immediate anomaly detection and alerting using Spark's windowing functions.
-- **Advanced Threat Hunting:** High-speed SQL queries over billions of rows using Spark SQL and Hive.
-- **Lakehouse Efficiency:** Combines the flexibility of a Data Lake with the structural performance of a Data Warehouse.
-- **Cost-Effective Scalability:** Built entirely on the open-source Apache ecosystem, eliminating expensive per-terabyte licensing.
-
-## 🛠️ Technology Stack
-- **Messaging:** Apache Kafka 3.7.x (KRaft mode — no Zookeeper)
-- **Processing Engine:** Apache Spark 3.5.x (PySpark)
-- **Data Warehouse:** Apache Hive 4.0.x
-- **Distributed Storage:** Apache Hadoop 3.2.x (HDFS)
-- **Visualization:** Apache Superset 4.1.x
-- **Environment:** Docker & Docker Compose
-
-## 📂 Quick Start
-
-We provide a simple `Makefile` wrapper for all Docker and Spark commands. If you do not have `make` installed, you can look at the `Makefile` and run the raw `docker compose` and `docker exec` commands.
-
-### 1) Start the Platform
-
-```bash
-make up
-# or: docker compose up -d
+    ZP --> KP --> KB --> SM
+    SM --- SW
+    SM --> LAKE
+    VIZ --> LAKE
+    
+    style SPARK fill:#f8fafc,stroke:#fdcb6e,stroke-width:2px
+    style LAKE fill:#f8fafc,stroke:#74b9ff,stroke-width:2px
+    style VIZ fill:#f8fafc,stroke:#fd79a8,stroke-width:2px
 ```
 
-This will deploy:
+---
 
-- Kafka (KRaft mode — no Zookeeper dependency)
-- Hadoop HDFS (1 NameNode + 2 DataNodes)
-- Hive Metastore + HiveServer2 + PostgreSQL Metastore DB
-- Spark (1 Master + 2 Workers + Thrift Server on :10000)
-- Superset + Redis (SOC dashboards at :8088)
-- 4 distributed flog producers (`web-logs`, `syslogs`, `app-logs`, `win-event-logs`)
+## 🚀 Quick Deployment
 
-**Web UIs after startup:**
+Spin up the entire SOC environment with a single command:
 
-| Service | URL |
-|---------|-----|
-| Spark Master | http://localhost:8080 |
-| HDFS NameNode | http://localhost:9870 |
-| Superset | http://localhost:8088 |
-| Spark Worker 1 | http://localhost:8081 |
-| Spark Worker 2 | http://localhost:8082 |
-
-### 2) Run the ETL Job
-
-```bash
-make run-job
-# or: docker exec -it spark-master spark-submit ...
+```powershell
+docker compose up -d --build
 ```
 
-### 3) Validate Distributed Health
+### 🔗 Service Access Points
 
-Use the operational runbooks in `docs/` to verify:
+| Service | Endpoint | Description |
+|:---|:---|:---|
+| **SOC Dashboard** | [http://localhost:8088](http://localhost:8088) | Real-time security monitoring & alerts |
+| **ML Notebooks** | [http://localhost:9090](http://localhost:9090) | Threat hunting & Data science lab |
+| **Spark Master** | [http://localhost:8080](http://localhost:8080) | Cluster status & job monitoring |
+| **HDFS NameNode** | [http://localhost:9870](http://localhost:9870) | Data lake explorer |
 
-- `docs/verification-guide.md` — HDFS, Hive, Kafka, Spark health checks
-- `docs/superset-guide.md` — Superset connection, query examples, and dashboard setup
-- `docs/EXAMPLE_QUERIES.md` — Raw SQL threat-hunting queries
-- `docs/CAPACITY.md` — Sizing recommendations
+---
 
-## 📁 Project Structure
+## 📂 Project Ecosystem
+- **`config/`** — Unified service orchestration, build contexts, and ML jobs.
+- **`docs/`** — Deep-dive research, capacity planning, and operational guides.
+- **`data/`** — Sample datasets for immediate NDR testing.
+- **`showcase/`** — Interactive presentation of the platform capabilities.
 
-- `docker-compose.yml` — Full platform stack definition
-- `Makefile` — Convenience wrapper for common commands
-- `config/hadoop/core-site.xml` — HDFS client configuration
-- `config/hadoop/hdfs-site.xml` — HDFS replication settings
-- `config/hive/hive-site.xml` — Hive Metastore connection
-- `config/spark/spark-defaults.conf` — Spark tuning
-- `flog/Dockerfile` — Log generator image
-- `flog/publish_flog.sh` — Flog → Kafka producer script
-- `jobs/etl_process.py` — Kafka → Hive Parquet ETL job
-- `jobs/detection_rules.py` — Spark SQL based SIEM detection engine
-- `docs/verification-guide.md` — Operational health runbook
-- `docs/superset-guide.md` — Superset connection & SOC dashboard guide
-- `docs/EXAMPLE_QUERIES.md` — SQL threat-hunting query examples
-- `docs/CAPACITY.md` — Storage and memory sizing guide
-- `research/` — Technical deep-dive documents for each component
-- `showcase/` — Interactive HTML presentation of the platform
+---
+*Built for the next generation of Cyber Defense.*

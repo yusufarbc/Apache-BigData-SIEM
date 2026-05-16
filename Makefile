@@ -7,7 +7,7 @@ help:
 	@echo "Commands:"
 	@echo "  make up                - Start the entire SIEM platform via docker-compose"
 	@echo "  make down              - Tear down the platform and remove containers"
-	@echo "  make build             - Rebuild all docker images (e.g., flog generators)"
+	@echo "  make build             - Rebuild all docker images"
 	@echo "  make logs              - View logs of all containers"
 	@echo "  make run-job           - Submit the Spark ETL process to the cluster"
 	@echo "  make shell             - Get an interactive shell inside the spark-master"
@@ -28,7 +28,7 @@ logs:
 run-job:
 	docker exec -it spark-master spark-submit \
 		--master spark://spark-master:7077 \
-		--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 \
+		--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6 \
 		/opt/bitnami/spark/jobs/etl_process.py
 
 shell:
