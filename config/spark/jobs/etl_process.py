@@ -71,12 +71,13 @@ def initialize_hive_table(spark: SparkSession) -> None:
           country STRING,
           city STRING,
           intelligence_tag STRING,
+          dest_port STRING,
+          orig_bytes BIGINT,
           ingest_ts TIMESTAMP,
-          ingest_date DATE,
-          detect_date DATE
+          ingest_date DATE
         )
         USING PARQUET
-        PARTITIONED BY (detect_date)
+        PARTITIONED BY (ingest_date)
         LOCATION '{HIVE_TABLE_LOCATION}'
         """
     )
@@ -111,9 +112,17 @@ def extract_attributes(logs_df: DataFrame) -> DataFrame:
             # Zeek fields
             StructField("id.orig_h", StringType(), True),
             StructField("id.resp_h", StringType(), True),
-            StructField("id.resp_p", IntegerType(), True),
+            StructField("id.resp_p", StringType(), True),
+            StructField("dest_port", StringType(), True),
+            StructField("orig_bytes", StringType(), True),
             StructField("proto", StringType(), True),
             StructField("service", StringType(), True),
+            # Zeek HTTP/DNS specific fields
+            StructField("method", StringType(), True),
+            StructField("uri", StringType(), True),
+            StructField("status_code", StringType(), True),
+            StructField("response_body_len", StringType(), True),
+            StructField("query", StringType(), True),
         ]
     )
 
@@ -150,9 +159,28 @@ def extract_attributes(logs_df: DataFrame) -> DataFrame:
         .withColumn("client_ip", 
             when(col("raw_log").contains("id.orig_h"), json_parsed.getField("id.orig_h"))
             .otherwise(col("client_ip")))
+        .withColumn("http_method", 
+            when(col("raw_log").contains('"method"'), json_parsed.getField("method"))
+            .otherwise(col("http_method")))
+        .withColumn("request_path", 
+            when(col("raw_log").contains('"uri"'), json_parsed.getField("uri"))
+            .when(col("raw_log").contains('"query"'), json_parsed.getField("query"))
+            .otherwise(col("request_path")))
         .withColumn("status_code", 
-            when(col("raw_log").contains("id.resp_p"), json_parsed.getField("id.resp_p").cast("string"))
+            when(col("raw_log").contains('"status_code"'), json_parsed.getField("status_code").cast("string"))
+            .when(col("raw_log").contains("id.resp_p"), json_parsed.getField("id.resp_p").cast("string"))
             .otherwise(col("status_code")))
+        .withColumn("bytes_sent", 
+            when(col("raw_log").contains('"response_body_len"'), json_parsed.getField("response_body_len").cast("string"))
+            .when(col("raw_log").contains('"bytes"'), json_parsed.getField("bytes").cast("string"))
+            .otherwise(col("bytes_sent")))
+        .withColumn("dest_port", 
+            when(col("raw_log").contains("id.resp_p"), json_parsed.getField("id.resp_p").cast("string"))
+            .when(col("raw_log").contains("dest_port"), json_parsed.getField("dest_port").cast("string"))
+            .otherwise(lit(None).cast("string")))
+        .withColumn("orig_bytes", 
+            when(col("raw_log").contains("orig_bytes"), json_parsed.getField("orig_bytes").cast("long"))
+            .otherwise(lit(None).cast("long")))
 
         # ── Enrichment: Simulated GeoIP & Threat Intel ──
         .withColumn("country", 
@@ -215,6 +243,8 @@ def append_to_hive(batch_df: DataFrame, batch_id: int) -> None:
         "country",
         "city",
         "intelligence_tag",
+        "dest_port",
+        "orig_bytes",
         "ingest_ts",
         "ingest_date",
     ]
@@ -227,12 +257,21 @@ def append_to_hive(batch_df: DataFrame, batch_id: int) -> None:
         .insertInto("siem.logs_parsed", overwrite=False)
     )
 
-    # 2. Evaluate detection rules and generate alerts
     spark = batch_df.sparkSession
+    try:
+        spark.sql("MSCK REPAIR TABLE siem.logs_parsed")
+    except Exception as e:
+        print(f"  [WARNING] Failed to repair logs_parsed table: {e}")
+
+    # 2. Evaluate detection rules and generate alerts
     batch_df.createOrReplaceTempView("batch_logs")
     alert_count = evaluate_rules(spark, batch_df, batch_id)
     if alert_count > 0:
         print(f"  Batch {batch_id}: Generated {alert_count} alert(s)")
+        try:
+            spark.sql("MSCK REPAIR TABLE siem.alerts")
+        except Exception as e:
+            print(f"  [WARNING] Failed to repair alerts table: {e}")
 
 
 def main() -> None:

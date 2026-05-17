@@ -32,31 +32,33 @@ K = int(os.getenv("KMEANS_K", "8"))
 SEED = 42
 COLD_START_ROWS = 100  # Minimum rows to train the first model
 RETRAIN_EVERY_BATCHES = 50  # Frequency of model updates
-ANOMALY_THRESHOLD = float(os.getenv("ANOMALY_THRESHOLD", "10.0"))  # Significantly increased to reduce noise
+ANOMALY_THRESHOLD = float(os.getenv("ANOMALY_THRESHOLD", "3.0"))  # Significantly increased to reduce noise
 
 # Features used for ML
 # Removed dest_port because port numbers are not linear distances
 FEATURE_COLS = ["duration_log", "orig_bytes_log", "resp_bytes_log"]
 
+from pyspark.sql.types import BooleanType
+
 # ── SCHEMAS ──────────────────────────────────────────────────────────────────
 # Note: Zeek logs use dots in keys (id.orig_h). 
 # We define them here but will ALIAS them immediately after parsing.
 NETWORK_SCHEMA = StructType([
-    StructField("ts", DoubleType(), True),
+    StructField("ts", StringType(), True),
     StructField("uid", StringType(), True),
     StructField("id.orig_h", StringType(), True),
-    StructField("id.orig_p", IntegerType(), True),
+    StructField("id.orig_p", StringType(), True),
     StructField("id.resp_h", StringType(), True),
-    StructField("id.resp_p", IntegerType(), True),
+    StructField("id.resp_p", StringType(), True),
     StructField("proto", StringType(), True),
     StructField("service", StringType(), True),
-    StructField("duration", DoubleType(), True),
-    StructField("orig_bytes", LongType(), True),
-    StructField("resp_bytes", LongType(), True),
+    StructField("duration", StringType(), True),
+    StructField("orig_bytes", StringType(), True),
+    StructField("resp_bytes", StringType(), True),
     StructField("conn_state", StringType(), True),
-    StructField("orig_pkts", LongType(), True),
-    StructField("resp_pkts", LongType(), True),
-    StructField("is_attack", IntegerType(), True),
+    StructField("orig_pkts", StringType(), True),
+    StructField("resp_pkts", StringType(), True),
+    StructField("is_attack", BooleanType(), True),
 ])
 
 # ── HELPERS ──────────────────────────────────────────────────────────────────
@@ -67,7 +69,9 @@ def train_kmeans(feature_df):
     
     # Feature Engineering for training
     from pyspark.sql.functions import log1p
-    train_df = feature_df.withColumn("duration_log", log1p(col("duration"))) \
+    train_df = feature_df.na.fill(value=0.0, subset=["duration"]) \
+                         .na.fill(value=0, subset=["orig_bytes", "resp_bytes"]) \
+                         .withColumn("duration_log", log1p(col("duration"))) \
                          .withColumn("orig_bytes_log", log1p(col("orig_bytes"))) \
                          .withColumn("resp_bytes_log", log1p(col("resp_bytes")))
 
@@ -172,7 +176,9 @@ class BatchProcessor:
             # We use log1p(x) = log(1+x) to avoid log(0) issues
             from pyspark.sql.functions import log1p
             
-            fe_df = batch_df.withColumn("duration_log", log1p(col("duration"))) \
+            fe_df = batch_df.na.fill(value=0.0, subset=["duration"]) \
+                           .na.fill(value=0, subset=["orig_bytes", "resp_bytes"]) \
+                           .withColumn("duration_log", log1p(col("duration"))) \
                            .withColumn("orig_bytes_log", log1p(col("orig_bytes"))) \
                            .withColumn("resp_bytes_log", log1p(col("resp_bytes")))
             
@@ -346,16 +352,22 @@ def main():
             from_json(col("value").cast("string"), NETWORK_SCHEMA).alias("d"),
         )
         .select(
-            "kafka_ts",
-            col("d.ts"),
-            col("d.uid"),
-            col("d.`id.orig_h`").alias("src_ip"),
-            col("d.`id.orig_p`").alias("src_port"),
-            col("d.`id.resp_h`").alias("dest_ip"),
-            col("d.`id.resp_p`").alias("dest_port"),
-            "d.proto", "d.service", "d.duration", "d.orig_bytes", "d.resp_bytes", "d.conn_state"
+            col("kafka_ts"),
+            col("d").getField("ts").alias("ts"),
+            col("d").getField("uid").alias("uid"),
+            col("d").getField("id.orig_h").alias("src_ip"),
+            col("d").getField("id.orig_p").cast("integer").alias("src_port"),
+            col("d").getField("id.resp_h").alias("dest_ip"),
+            col("d").getField("id.resp_p").cast("integer").alias("dest_port"),
+            col("d").getField("proto").alias("proto"),
+            col("d").getField("service").alias("service"),
+            col("d").getField("duration").cast("double").alias("duration"),
+            col("d").getField("orig_bytes").cast("long").alias("orig_bytes"),
+            col("d").getField("resp_bytes").cast("long").alias("resp_bytes"),
+            col("d").getField("conn_state").alias("conn_state")
         )
         .na.drop(subset=["src_ip", "dest_ip", "dest_port"])
+        .filter((col("src_ip") != "") & (col("src_ip").isNotNull()) & (col("src_ip") != "-"))
     )
 
     processor = BatchProcessor()

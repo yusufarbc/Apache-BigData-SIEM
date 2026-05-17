@@ -1,47 +1,3 @@
-#!/bin/bash
-set -e
-
-echo "Starting Superset Initializer (Clean & Optimized)..."
-
-# Ensure the DB URI is recognized by the environment
-export SQLALCHEMY_DATABASE_URI=${SQLALCHEMY_DATABASE_URI:-"postgresql+psycopg2://superset:superset123@siem-postgres:5432/superset"}
-export SUPERSET_CONFIG_PATH=${SUPERSET_CONFIG_PATH:-"/app/config/superset_config.py"}
-export SUPERSET_ENV=production
-
-# 1. Wait for Postgres
-echo "Waiting for Postgres (siem-postgres:5432)..."
-until printf "" 2>>/dev/null >>/dev/tcp/siem-postgres/5432; do 
-    sleep 2
-done
-
-# 1.1 Wait for Spark Thrift (Required for metadata setup)
-echo "Waiting for Spark Thrift (spark-thrift:10000)..."
-until printf "" 2>>/dev/null >>/dev/tcp/spark-thrift/10000; do 
-    sleep 5
-done
-
-# 1b. Install missing drivers
-echo "Installing Spark/Hive and Postgres drivers..."
-pip install --no-cache-dir pyhive thrift thrift-sasl psycopg2-binary
-
-# 2. Standard Superset Init (Must run before python script)
-echo "Running Database Upgrade..."
-superset db upgrade
-
-echo "Creating Admin User..."
-superset fab create-admin \
-    --username admin \
-    --firstname Superset \
-    --lastname Admin \
-    --email admin@siem.local \
-    --password admin || true
-
-echo "Initializing Superset..."
-superset init
-
-# 3. Dynamic Dashboard & Metadata Setup via Python
-echo "Applying SIEM Dashboard & Table Metadata..."
-python3 - <<EOF
 import json
 import time
 from superset.app import create_app
@@ -67,16 +23,16 @@ def run_setup():
             spark_db = Database(database_name="Spark Thrift Server")
             db.session.add(spark_db)
         
-        print(f"Updating Spark Thrift URI to hive://spark-thrift:10000/siem")
+        print("Updating Spark Thrift URI to hive://spark-thrift:10000/siem")
         spark_db.sqlalchemy_uri = "hive://spark-thrift:10000/siem"
         db.session.commit()
 
-        # Robust waiting mechanism for Spark tables to be created by streaming jobs
+        # Robust waiting mechanism for Spark tables to be created
         engine = create_engine("hive://spark-thrift:10000/siem")
         required_tables = ["network_anomalies", "network_flows", "model_metrics", "logs_parsed", "alerts"]
         tables_exist = False
         print("Checking if all required Spark tables exist in Hive...")
-        for i in range(30):
+        for i in range(5):
             try:
                 inspector = inspect(engine)
                 tables = inspector.get_table_names()
@@ -86,12 +42,7 @@ def run_setup():
                     print("All 5 required Spark tables found!")
                     break
             except Exception as e:
-                print(f"Waiting for Spark tables to be created... ({e})")
-            time.sleep(5)
-        
-        if not tables_exist:
-            print("WARNING: Timeout waiting for Spark tables. Proceeding with metadata setup...")
-
+                print(f"Waiting for Spark tables... ({e})")
         # Delete old slices starting with NDR: or SOC: from the database to avoid orphaned charts
         print("Cleaning up old NDR: and SOC: prefixed slices...")
         db.session.query(Slice).filter(
@@ -232,8 +183,5 @@ def run_setup():
         db.session.commit()
         print("DASHBOARD SETUP COMPLETE: slug=soc_ndr")
 
-run_setup()
-EOF
-
-echo "Starting Superset Server..."
-superset run -h 0.0.0.0 -p 8088 --with-threads --reload --debugger
+if __name__ == "__main__":
+    run_setup()
