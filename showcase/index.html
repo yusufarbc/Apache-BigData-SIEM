@@ -1226,7 +1226,7 @@
           <p>Modelin doğruluğunu jüri önünde ispatlayan anomali kararları ve başarım metrikleri:</p>
           <ul class="presentation-list">
             <li><strong>Anomali Skoru Eşitliği:</strong> Her ağ oturumunun atanmış küme merkezine olan mesafesi ($d$)
-              doğrudan **Anomali Skoru**dur.</li>
+              doğrudan <strong>Anomali Skoru</strong>dur.</li>
             <li><strong>Hassas Eşik Değeri (Threshold = 3.0):</strong> Bu mesafe $3.0$ standard sapma limitini aşarsa,
               akış anında siber anomali (outlier) olarak etiketlenir ve alarmlar veri gölüne yazılır.</li>
             <li><strong>WSSSE Metrik Takibi:</strong> Modelin küme içi hata kareleri toplamı (WSSSE) her eğitim adımında
@@ -1253,9 +1253,6 @@
               dizin geçiş paternlerinin yakalanması.</li>
             <li><strong>SIEM-003 (Sıra Dışı Yüksek Hacim):</strong> Tek bir kaynak IP'nin 10 saniyelik batch içinde
               normal dışı (100+) sayıda HTTP bağlantısı kurması.</li>
-            <li><strong>Coğrafi IP ve Tehdit İstihbaratı Zenginleştirme:</strong> Loglar akarken kaynak IP'nin
-              ülke-şehir verisi dinamik eklenir ve bilinen Zararlı IP/Tor Exit Node listeleriyle anlık karşılaştırılarak
-              etiketlenir.</li>
           </ul>
         </div>
       </div>
