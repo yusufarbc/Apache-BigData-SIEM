@@ -7,7 +7,7 @@ The architecture consists of a fully distributed Data Lakehouse environment with
 
 ### Ingestion Tier (2 Containers)
 - **`kafka-broker`** (x1): The messaging backbone running in KRaft mode.
-- **`kafka-producer`** (x1): High-speed log injector streaming log events and executing simulated cyber attacks (`attack_injector.py`).
+- **`kafka-producer`** (x1): High-speed log injector streaming real-world network and server events directly from the raw SecRepo and Linux datasets.
 
 ### Storage Tier (2 Containers)
 - **`namenode`** (x1): HDFS distributed namespace manager and file health dashboard.

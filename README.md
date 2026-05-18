@@ -23,8 +23,7 @@ The platform implements a modern Lambda/Lakehouse architecture, guaranteeing sub
 ```mermaid
 graph TD
     subgraph SOURCES["📡 Data Sources"]
-        CL["Raw Network Logs<br/><i>data/conn.log</i>"]
-        AI["Attack Injector<br/><i>attack_injector.py</i>"]
+        SR["SecRepo & Linux Server Logs<br/><i>data/*.log</i>"]
     end
 
     subgraph INGEST["📨 Ingestion Tier"]
@@ -52,8 +51,7 @@ graph TD
     end
 
     %% Data Flow
-    CL --> KP
-    AI --> KP
+    SR --> KP
     KP -->|Produce events| KB
     KB -->|Subscribe stream| SE
     SE -->|Deploy Spark jobs| SM
