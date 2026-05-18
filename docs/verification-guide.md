@@ -1,24 +1,34 @@
 # Verification Guide (Distributed Status)
 
+This guide provides instructions to verify that the 13 platform containers of the Apache BigData SIEM platform are healthy and communicating correctly.
+
+---
+
 ## 1) Start the Full Stack
+
+Clone the repository and launch the orchestrator stack using Docker Compose:
 
 ```bash
 docker compose up -d --build
 ```
 
-Check container status:
+Check the health status of all container nodes:
 
 ```bash
 docker compose ps
 ```
 
+All 13 containers should display as `running (healthy)` or `running`.
+
+---
+
 ## 2) Verify Hadoop HDFS Distribution
 
-Check NameNode UI:
+Check the HDFS NameNode Web Console:
 
-- http://localhost:9870
+- [http://localhost:9870](http://localhost:9870)
 
-Confirm DataNode count from CLI (should be 2 live nodes):
+Confirm the HDFS DataNode status from the command line (should register 1 live datanode container):
 
 ```bash
 docker exec -it namenode hdfs dfsadmin -report
@@ -26,100 +36,106 @@ docker exec -it namenode hdfs dfsadmin -report
 
 Look for:
 
-- `Live datanodes (2)`
+- `Live datanodes (1)`
 
-Optionally verify HDFS write/read path:
+Verify that the HDFS file path can be written to and read successfully:
 
 ```bash
 docker exec -it namenode hdfs dfs -mkdir -p /tmp/healthcheck
 docker exec -it namenode hdfs dfs -ls /
 ```
 
-## 3) Verify Hive Metastore + HiveServer2
+---
 
-Confirm metastore thrift service:
+## 3) Verify Hive Metastore + Spark Thrift Server
+
+Confirm the Hive Metastore is listening and reachable on the metadata port:
 
 ```bash
 docker exec -it hive-metastore /opt/hive/bin/hive --service metatool -listFSRoot
 ```
 
-Run a Hive SQL test through HiveServer2:
+Execute a test query against the Spark Thrift JDBC server (which maps SparkSQL tables toport `10000` on the `spark-thrift` container):
 
 ```bash
-docker exec -it hive-server2 /opt/hive/bin/beeline -u jdbc:hive2://localhost:10000 -e "SHOW DATABASES;"
+docker exec -it spark-thrift /opt/bitnami/spark/bin/beeline -u jdbc:hive2://localhost:10000 -e "SHOW DATABASES;"
 ```
 
-## 4) Verify Kafka Broker + Topics
+---
 
-List topics:
+## 4) Verify Kafka Broker + Ingested Topics
+
+List the active Kafka topics inside the KRaft broker:
 
 ```bash
-docker exec -it kafka-broker kafka-topics.sh --bootstrap-server kafka-broker:9092 --list
+docker exec -it kafka-broker kafka-topics.sh --bootstrap-server localhost:9092 --list
 ```
 
-You should see topics auto-created by flog producers:
+You should see topics auto-created by the `kafka-producer` container as it streams Zeek and syslog network events:
 
-- `web-logs`
-- `syslogs`
-- `app-logs`
+- `real_network_logs` (Zeek connection logs used for streaming K-Means)
+- `web-logs` (Zeek HTTP request logs)
+- `dns-logs` (Zeek DNS lookup logs)
+- `ssl-logs` (Zeek SSL/TLS handshake logs)
+- `ssh-logs` (Zeek SSH session logs)
+- `syslogs` (Host log signals)
+- `app-logs` (Application level logs)
 
-Consume sample events:
+Consume sample event packets from the Kafka broker:
 
 ```bash
-docker exec -it kafka-broker kafka-console-consumer.sh --bootstrap-server kafka-broker:9092 --topic web-logs --from-beginning --max-messages 5
+docker exec -it kafka-broker kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic real_network_logs --from-beginning --max-messages 5
 ```
+
+---
 
 ## 5) Verify Spark Cluster Distribution
 
-Spark Master UI:
+Examine the Spark Master Web Console to monitor jobs, active streaming queries, and worker allocations:
 
-- http://localhost:8080
+- [http://localhost:8080](http://localhost:8080)
 
-Worker UIs:
+In the Spark Master Web UI, confirm that both Spark Worker replicas (each allocated 2 Cores and 2GB RAM by the compose manifest) are fully registered and healthy.
 
-- http://localhost:8081
-- http://localhost:8082
+---
 
-In Spark Master UI, confirm both workers are registered.
+## 6) Run and Verify the Streaming ETL & NDR Engines
 
-## 6) Run and Verify the ETL Job
-
-Submit ETL job from Spark Master:
+The Spark streaming applications are automatically submitted at boot-up by the dedicated **`siem-engine`** container. You can monitor the streaming loops and anomaly scoring metrics by reviewing the container logs:
 
 ```bash
-docker exec -it spark-master spark-submit \
-  --master spark://spark-master:7077 \
-  --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 \
-  /opt/bitnami/spark/jobs/etl_process.py
+# Monitor the PySpark Structured Streaming ETL and NDR K-Means logs
+docker logs siem-engine --tail 100 -f
 ```
 
-After a minute, validate Hive table population:
+After logs have streamed for a few minutes, query the Hive warehouse table `siem.logs_parsed` through the Spark Thrift client to verify database insertion:
 
 ```bash
-docker exec -it hive-server2 /opt/hive/bin/beeline -u jdbc:hive2://localhost:10000 -e "SELECT source_topic, COUNT(*) FROM siem.logs_parsed GROUP BY source_topic;"
+docker exec -it spark-thrift /opt/bitnami/spark/bin/beeline -u jdbc:hive2://localhost:10000 -e "SELECT source_topic, COUNT(*) FROM siem.logs_parsed GROUP BY source_topic;"
 ```
+
+---
 
 ## 7) Failure Isolation Quick Checks
 
-If Kafka is not receiving logs:
+If Kafka is not receiving log event streams:
 
 ```bash
-docker logs flog-web --tail 50
-docker logs flog-syslog --tail 50
-docker logs flog-app --tail 50
+# Check the Python Zeek/syslog streamer log output
+docker logs kafka-producer --tail 100
 ```
 
-If Spark cannot write to Hive:
+If the Spark Streaming engine cannot write Parquet files to the HDFS storage layer:
 
 ```bash
+docker logs siem-engine --tail 100
 docker logs spark-master --tail 100
 docker logs hive-metastore --tail 100
 ```
 
-If HDFS is unhealthy:
+If the HDFS Distributed storage layer is reporting unhealthy states:
 
 ```bash
 docker logs namenode --tail 100
-docker logs datanode-1 --tail 100
-docker logs datanode-2 --tail 100
+docker logs datanode --tail 100
 ```

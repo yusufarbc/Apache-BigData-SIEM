@@ -3,31 +3,29 @@
 This document outlines the hardware footprint, maximum theoretical throughput, and sizing capabilities of the localized SIEM cluster.
 
 ## 1. Container Details (Microservices)
-The architecture consists of a fully distributed Data Lakehouse environment with **16 distinct containers**:
+The architecture consists of a fully distributed Data Lakehouse environment with **13 distinct containers**:
 
-### Log Simulation (3 Containers) - *Test Environment Only*
-- **`flog-web`, `flog-app`, `flog-syslog`** (x3): Generators simulating real-time log traffic. These act as dummy log sources and are explicitly for testing/demonstration.
-
-### Ingestion Tier (1 Container)
+### Ingestion Tier (2 Containers)
 - **`kafka-broker`** (x1): The messaging backbone running in KRaft mode.
+- **`kafka-producer`** (x1): High-speed log injector streaming log events and executing simulated cyber attacks (`attack_injector.py`).
 
-### Storage Tier (3 Containers)
-- **`namenode`** (x1): HDFS namespace manager.
-- **`datanode-1`, `datanode-2`** (x2): HDFS storage nodes holding the raw data and Parquet files.
+### Storage Tier (2 Containers)
+- **`namenode`** (x1): HDFS distributed namespace manager and file health dashboard.
+- **`datanode`** (x1): HDFS storage node holding raw data and Parquet files.
 
-### Processing & ETL Tier (4 Containers)
-- **`spark-master`** (x1): Spark cluster manager & distributed SQL Thrift Server (Port 10000).
-- **`spark-worker-1`, `spark-worker-2`** (x2): Executors running PySpark Streaming tasks (4 cores, 4GB RAM combined).
-- **`spark-etl`** (x1): Automated job submitter for the ETL stream.
+### Processing & ETL Tier (5 Containers)
+- **`spark-master`** (x1): Spark cluster manager and coordinator.
+- **`spark-worker`** (x2): Two clustered Spark worker instances executing streaming pipelines (2 cores, 2GB RAM per worker instance).
+- **`spark-thrift`** (x1): Distributed SQL Thrift JDBC/ODBC Server mapping SparkSQL datasets (Port 10000).
+- **`siem-engine`** (x1): Automated PySpark ETL and anomaly detector runner (`etl_process.py` and `streaming_kmeans.py`).
 
-### Metadata & Catalog Tier (4 Containers)
-- **`hive-metastore-db`** (x1): PostgreSQL backend for schemas.
-- **`hive-metastore`** (x1): Apache Hive catalog service.
-- **`hive-server2`** (x1): Standard JDBC/ODBC Hive interface (Port 10001).
+### Metadata & Catalog Tier (2 Containers)
+- **`postgres`** (x1): PostgreSQL backing database hosting metastore schemas for Hive and configurations for Superset.
+- **`hive-metastore`** (x1): Apache Hive metastore catalog mapping database tables and views.
 
 ### Analysis & Web GUI Tier (2 Containers)
-- **`superset`** (x1): BI metrics dashboard.
-- **`superset-redis`** (x1): Underlying Cache for Superset.
+- **`superset`** (x1): BI metrics reporting and real-time security dashboard.
+- **`zeppelin`** (x1): Interactive Python/Spark research notebook and threat hunting playground.
 
 ---
 
@@ -40,7 +38,7 @@ The cluster operates using Spark Structured Streaming on a micro-batch architect
 - **Current EPS (Events Per Second)**: **~6000 EPS** sustained.
 
 ### Maximum Theoretical Limits (Local 4-Core Setup)
-- **HDFS**: Limited by SATA/NVMe I/O. For Parquet format, easily handles **15,000+ EPS**.
+- **HDFS**: Limited by disk/SSD I/O. For Parquet format, easily handles **15,000+ EPS**.
 - **Kafka**: A single broker in KRaft mode on a modern CPU can handle **~30,000+ EPS** (High throughput limit).
 - **Spark Processing**: The bottleneck logic is JSON/Regex parsing in python. Using 2 Workers (4 Cores / 4GB total), the local cluster will peak around **5,000 to 8,000 EPS** before scheduling delays occur.
 
@@ -54,12 +52,11 @@ Approximate consumptions of the local Docker network based on resting/low-load s
 
 | Component Category      | CPU Utilization | Memory Size (RAM) | Notes |
 |-------------------------|-----------------|-------------------|-------|
-| **Storage (Hadoop)**    | ~11.5 %         | ~2.2 GiB           | Increases predictably with HDFS writes. |
-| **Load Gen. (Flog)**    | ~7.8 %          | ~4 MiB             | Dummy log generators. *Test Environment Only*. |
-| **Ingestion (Kafka)**   | ~1.8 %          | ~711 MiB           | Stable. Memory is regulated by JVM Heap sizes. |
-| **Compute (Spark)**     | ~1.0 %          | ~1.6 GiB           | Bursts occurring every 1 second during ETL micro-batches. |
-| **Metadata (Hive)**     | ~0.1 %          | ~695 MiB           | Passive most of the time. |
-| **GUI (Superset/BI)**   | ~0.7 %          | ~600 MiB           | Spikes locally when rendering heavy Superset dashboards. |
-| **Total Allocation**    | **~23 % CPU**   | **~5.8 GiB (Total)**| Total footprint on the host Docker Engine. |
+| **Storage (Hadoop)**    | ~11.5 %         | ~2.2 GiB           | NameNode & DataNode. Increases predictably with HDFS writes. |
+| **Ingestion (Kafka)**   | ~2.2 %          | ~715 MiB           | Broker & Producer. Stable. Memory is regulated by JVM Heap sizes. |
+| **Compute (Spark)**     | ~2.5 %          | ~2.4 GiB           | Master, Workers, Thrift & Engine. Active streaming tasks. |
+| **Metadata (Hive & DB)**| ~0.2 %          | ~720 MiB           | PostgreSQL & Hive Metastore catalog databases. |
+| **GUI (Superset & Zep)**| ~0.8 %          | ~750 MiB           | UI dashboard and notebook servers. Spikes during heavy queries. |
+| **Total Allocation**    | **~17.2 % CPU** | **~6.6 GiB (Total)**| Total footprint on the host Docker Engine. |
 
 **Disk Scaling:** Log consumption scales linearly based on compression ratios. Storing data in Hive as `.parquet` drastically reduces storage footprints over standard `.csv` or `.json` (typically a 10x - 20x reduction).

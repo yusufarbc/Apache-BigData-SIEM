@@ -1,110 +1,116 @@
-# NDR (Network Detection & Response) — Zeek/Suricata Veri Seti Kılavuzu
+# 📡 NDR (Network Detection & Response) — Zeek/Suricata Dataset Guide
 
-Bu dosya, gerçek ağ verisiyle sistemi beslemek için önerilen kaynakları ve
-indirme adımlarını açıklar.
+This document outlines the recommended external security datasets, installation steps, online clustering hyperparameters, and cyber attack simulation scripts to feed real-world network traffic logs into the **Apache Big Data SIEM & NDR** pipeline.
 
 ---
 
-## Önerilen Veri Setleri
+## 🌐 Recommended Datasets for Scaling
 
-### 1. SecRepo — Zeek conn.log (En Hızlı Başlangıç)
+For advanced cybersecurity benchmarking and scalability testing, we recommend integrating the following high-fidelity open-source datasets:
 
-| Özellik       | Değer |
-|---------------|-------|
-| Format        | Zeek TSV / JSON |
-| İçerik        | HTTP, DNS, SSH, FTP bağlantıları |
-| Boyut         | ~50 MB – 2 GB |
-| URL           | https://www.secrepo.com/ |
+### 1. SecRepo — Zeek conn.log (Enables Quick Verification)
+
+| Feature | Specification / Value |
+| :--- | :--- |
+| **Log Format** | Zeek TSV / JSON |
+| **Event Focus** | Real-world HTTP, DNS, SSH, FTP connections |
+| **Uncompressed Size** | ~50 MB to 2 GB |
+| **Download Portal** | [SecRepo.com](https://www.secrepo.com/) |
 
 ```bash
-# Örnek (küçük örnek veri seti):
+# Example download for quick, small-scale validation:
 curl -O https://www.secrepo.com/maccdc2012/conn.log.gz
 gunzip conn.log.gz
-# → /path/to/conn.log
+mv conn.log ./data/conn.log
 ```
 
 ---
 
-### 2. UNSW-NB15 (Suricata/Zeek formatında hazır)
+### 2. UNSW-NB15 (Standard Cyber Threat Benchmark)
 
-| Özellik       | Değer |
-|---------------|-------|
-| Format        | CSV → JSON'a dönüştürülmeli |
-| İçerik        | 9 farklı saldırı türü + normal trafik |
-| URL           | https://research.unsw.edu.au/projects/unsw-nb15-dataset |
+| Feature | Specification / Value |
+| :--- | :--- |
+| **Log Format** | CSV (Convert to JSON/TSV) |
+| **Event Focus** | 9 distinct cyber attack vectors mixed with normal traffic profiles |
+| **Download Portal** | [UNSW-NB15 Dataset](https://research.unsw.edu.au/projects/unsw-nb15-dataset) |
 
----
-
-### 3. CIC-IDS-2017 (Kaggle)
-
-| Özellik       | Değer |
-|---------------|-------|
-| Format        | CSV (Zeek benzeri sütunlar) |
-| URL           | https://www.kaggle.com/datasets/cicdataset/cicids2017 |
-
-CSV'yi Zeek JSON formatına dönüştürmek için `scripts/csv_to_zeek_json.py` kullan.
+*Conversion Tip:* Convert the CSV headers to matching Zeek JSON properties using `scripts/csv_to_zeek_json.py` to test parsing pathways.
 
 ---
 
-### 4. MAWI Working Group (Gerçek İnternet Trafiği)
+### 3. CIC-IDS-2017 (Modern Intrusion Detection)
 
-| Özellik       | Değer |
-|---------------|-------|
-| Format        | PCAP → Zeek ile işle |
-| URL           | https://mawi.wide.ad.jp/mawi/ |
+| Feature | Specification / Value |
+| :--- | :--- |
+| **Log Format** | Multi-Protocol CSV |
+| **Download Portal** | [Kaggle CIC-IDS-2017](https://www.kaggle.com/datasets/cicdataset/cicids2017) |
+
+---
+
+### 4. MAWI Working Group (Active Real-World Internet Traffic)
+
+| Feature | Specification / Value |
+| :--- | :--- |
+| **Log Format** | PCAP Capture (Preprocess using Zeek) |
+| **Download Portal** | [MAWI WIDE Repository](https://mawi.wide.ad.jp/mawi/) |
 
 ```bash
+# Parse raw PCAP files locally using the Zeek CLI:
 zeek -r capture.pcap local
-# → conn.log otomatik üretilir
+# → Instantly generates conn.log, dns.log, and http.log in your current folder
 ```
 
 ---
 
-## Veriyi Sisteme Bağlama
+## 🔌 Mounting Datasets to Ingestion Layer
 
-`docker-compose.yml` içindeki `kafka-producer` servisine volume mount ekle:
+To pipe your downloaded log datasets directly into the Kafka broker, map the file location as a volume mount inside the `kafka-producer` container inside `docker-compose.yml`:
 
 ```yaml
 kafka-producer:
   volumes:
-    - /host/path/to/conn.log:/data/conn.log:ro   # ← buraya kendi yolunu yaz
+    - /absolute/path/to/your/conn.log:/data/conn.log:ro   # Map host path to container
   environment:
-    LOG_FORMAT: auto      # zeek_tsv | zeek_json | suricata | synthetic
-    RECORDS_PER_SECOND: "200"
+    LOG_FORMAT: auto                                      # Supported: auto | zeek_tsv | zeek_json | suricata | synthetic
+    RECORDS_PER_SECOND: "500"                            # Controls ingestion rate (EPS)
 ```
 
-Mount yoksa sistem otomatik olarak **sentetik** Zeek-uyumlu veri üretir.
+> [!NOTE]
+> If no file is mounted or the file is missing, the `kafka-producer` falls back to **synthetic log generation**, creating realistic, normal Zeek connections dynamically to keep the analytics running.
 
 ---
 
-## K-Means Parametre Önerisi
+## ⚙️ Streaming K-Means Hyperparameters
 
-| Parametre           | Değer   | Açıklama |
-|---------------------|---------|----------|
-| `KMEANS_K`          | 8       | Küme sayısı — karmaşık trafik için 10-12 dene |
-| `COLD_START_ROWS`   | 5000    | Baseline eğitimi için gereken min. kayıt |
-| `ANOMALY_THRESHOLD` | 4.5     | Düşürürsen daha fazla alarm, artırırsan daha az |
+The real-time ML engine (`streaming_kmeans.py`) utilizes online scaling and clustering to identify anomalous records. We recommend the following base parameter values for optimal alert fidelity:
+
+| Hyperparameter | Recommended Value | Operational Description |
+| :--- | :---: | :--- |
+| **`KMEANS_K`** | `8` | Number of clusters. For highly complex corporate backbones, test `10` or `12`. |
+| **`COLD_START_ROWS`** | `5000` | Minimum baseline events required to train the initial cluster models before anomaly alerts trigger. |
+| **`ANOMALY_THRESHOLD`** | `4.5` | Sensitivity threshold (in standard deviations from centroid). Lowering this triggers more alarms; raising it filters out false positives. |
 
 ---
 
-## Saldırı Simülasyonu (Demo)
+## ⚔️ Cyber Attack Simulation & Verification (Demo Room)
+
+To validate the real-time scoring and watch Superset alarm metrics trigger under pressure, you can execute the interactive `attack_injector.py` script. The script generates realistic attack vectors directly into the Kafka stream:
 
 ```bash
-# Tüm saldırı tiplerini enjekte et:
+# Inject all simulated vectors (DDoS, Portscan, C2, Data Exfiltration)
 docker exec kafka-producer python attack_injector.py all
 
-# Sadece port tarama:
+# Inject Port Scan Simulation (rapid connections to randomized destination ports)
 docker exec kafka-producer python attack_injector.py portscan
 
-# Sadece veri sızdırma:
+# Inject Data Exfiltration (large payloads over unusual connection ports)
 docker exec kafka-producer python attack_injector.py exfiltration
 
-# DDoS simülasyonu:
+# Inject Distributed Denial of Service (DDoS) flood patterns
 docker exec kafka-producer python attack_injector.py ddos
 
-# C2 beacon:
+# Inject Command & Control (C2) beacon signals (frequent periodic heartbeats)
 docker exec kafka-producer python attack_injector.py c2
 ```
 
-Enjeksiyondan sonra Superset → **"NDR: SOC Analyst — Anomaly Monitor"** dashboard'unda
-kırmızı alertlerin düşmesini izle.
+After running an injection, navigate to **Apache Superset** ([http://localhost:8088](http://localhost:8088)) and watch the threat dashboard visualize the real-time anomaly scores!

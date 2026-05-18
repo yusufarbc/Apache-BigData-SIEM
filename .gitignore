@@ -1,5 +1,6 @@
 # Data & Storage
-data/
+data/*
+!data/README.md
 *.db
 *.sqlite
 logs/

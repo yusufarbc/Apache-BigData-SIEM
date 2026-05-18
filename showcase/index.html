@@ -735,7 +735,7 @@
           Processing ==> HDFS
           Processing -.-> HIVE
           ZEP -.-> Processing
-          
+
           SUP ==> HDFS
         </div>
       </div>
@@ -789,13 +789,16 @@
           <p>Mimarinin veri giriş kapısı, karmaşık bir mühendislik yerine stabiliteye odaklanarak tasarlanan özel Kafka
             Producer mikroservisidir:</p>
           <ul class="presentation-list">
-            <li><strong>Doğrudan Volume Okuma (Volume Mount):</strong> Konteyner, <code>/data</code> dizinine mount edilen
-              tüm Zeek loglarını (örn: <code>conn.log</code>, <code>http.log</code>, <code>dns.log</code>, <code>ssl.log</code>)
+            <li><strong>Doğrudan Volume Okuma (Volume Mount):</strong> Konteyner, <code>/data</code> dizinine mount
+              edilen
+              tüm Zeek loglarını (örn: <code>conn.log</code>, <code>http.log</code>, <code>dns.log</code>,
+              <code>ssl.log</code>)
               read-only olarak tarar ve akışa sokar.</li>
             <li><strong>Öncelikli Dosya Akışı:</strong> Konfigürasyon, kritik logları önceliklendirir ve mevcut dosyalar
               arasında sıralı/round-robin akış yapar (conn, http, dns, ssl, ssh, files, weird).</li>
             <li><strong>Çoklu Topic Yönlendirmesi:</strong> Log tipi bazlı Kafka topic'lerine dağıtım yapılır
-              (<code>real_network_logs</code>, <code>web-logs</code>, <code>dns-logs</code>, <code>ssl-logs</code>, <code>ssh-logs</code>).
+              (<code>real_network_logs</code>, <code>web-logs</code>, <code>dns-logs</code>, <code>ssl-logs</code>,
+              <code>ssh-logs</code>).
               Böylece statik veri seti canlı ağ trafiği gibi işlenir.</li>
           </ul>
         </div>
@@ -974,12 +977,10 @@
         </div>
         <div>
           <div style="text-align: center;">
-            <img src="postgresql.webp"
-              alt="Postgres Logo" />
+            <img src="postgresql.webp" alt="Postgres Logo" />
           </div>
           <div style="text-align: center;">
-            <img src="redis.webp"
-              alt="Redis Logo" />
+            <img src="redis.webp" alt="Redis Logo" />
           </div>
         </div>
       </div>
@@ -1039,7 +1040,8 @@
               text-anchor="middle">2. Adım: Çarpıklık Giderme (log1p)</text>
             <text x="210" y="258" font-family="sans-serif" font-size="12" font-weight="bold" fill="#ea580c"
               text-anchor="middle">duration_log, bytes_log</text>
-            <text x="210" y="276" font-family="sans-serif" font-size="11" fill="#9a3412" text-anchor="middle">Ağır çarpık
+            <text x="210" y="276" font-family="sans-serif" font-size="11" fill="#9a3412" text-anchor="middle">Ağır
+              çarpık
               byte dağılımı normalleşir</text>
 
             <line x1="210" y1="294" x2="210" y2="320" stroke="#ea580c" stroke-width="2" />
@@ -1092,8 +1094,10 @@
             xmlns="http://www.w3.org/2000/svg">
             <!-- Flow Step 1: VectorAssembler -->
             <rect x="30" y="10" width="360" height="70" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" />
-            <text x="210" y="36" font-family="sans-serif" font-size="18" font-weight="700" fill="#0f172a" text-anchor="middle">1. Adım: VectorAssembler</text>
-            <text x="210" y="58" font-family="sans-serif" font-size="14" fill="#64748b" text-anchor="middle">duration_log, orig_bytes_log, resp_bytes_log</text>
+            <text x="210" y="36" font-family="sans-serif" font-size="18" font-weight="700" fill="#0f172a"
+              text-anchor="middle">1. Adım: VectorAssembler</text>
+            <text x="210" y="58" font-family="sans-serif" font-size="14" fill="#64748b"
+              text-anchor="middle">duration_log, orig_bytes_log, resp_bytes_log</text>
 
             <!-- Arrow 1 -->
             <line x1="210" y1="85" x2="210" y2="125" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
@@ -1101,7 +1105,8 @@
 
             <!-- Flow Step 2: raw_features -->
             <rect x="30" y="140" width="360" height="70" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
-            <text x="210" y="170" font-family="sans-serif" font-size="16" font-weight="700" fill="#1e3a8a" text-anchor="middle">Birleştirilmiş Vektör (raw_features)</text>
+            <text x="210" y="170" font-family="sans-serif" font-size="16" font-weight="700" fill="#1e3a8a"
+              text-anchor="middle">Birleştirilmiş Vektör (raw_features)</text>
 
             <!-- Arrow 2 -->
             <line x1="210" y1="210" x2="210" y2="250" stroke="#3b82f6" stroke-width="2" />
@@ -1109,9 +1114,12 @@
 
             <!-- Flow Step 3: StandardScaler -->
             <rect x="30" y="270" width="360" height="110" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="2" />
-            <text x="210" y="300" font-family="sans-serif" font-size="16" font-weight="700" fill="#7c2d12" text-anchor="middle">2. Adım: StandardScaler (Z-Skor)</text>
-            <text x="210" y="322" font-family="sans-serif" font-size="14" fill="#ea580c" text-anchor="middle">Ortalama = 0, Varyans = 1 Standardizasyonu</text>
-            <text x="210" y="344" font-family="sans-serif" font-size="13" fill="#9a3412" text-anchor="middle">Özniteliklerin ağırlıkları eşitlenir</text>
+            <text x="210" y="300" font-family="sans-serif" font-size="16" font-weight="700" fill="#7c2d12"
+              text-anchor="middle">2. Adım: StandardScaler (Z-Skor)</text>
+            <text x="210" y="322" font-family="sans-serif" font-size="14" fill="#ea580c" text-anchor="middle">Ortalama =
+              0, Varyans = 1 Standardizasyonu</text>
+            <text x="210" y="344" font-family="sans-serif" font-size="13" fill="#9a3412"
+              text-anchor="middle">Özniteliklerin ağırlıkları eşitlenir</text>
 
             <!-- Arrow 3 -->
             <line x1="210" y1="390" x2="210" y2="430" stroke="#ea580c" stroke-width="2" />
@@ -1119,8 +1127,10 @@
 
             <!-- Flow Step 4: Distance & Outliers -->
             <rect x="30" y="440" width="360" height="70" rx="10" fill="#fdf2f8" stroke="#db2777" stroke-width="2" />
-            <text x="210" y="468" font-family="sans-serif" font-size="16" font-weight="700" fill="#831843" text-anchor="middle">3. Adım: Canlı Euclidean Mesafe Kararı</text>
-            <text x="210" y="492" font-family="sans-serif" font-size="14" font-weight="700" fill="#db2777" text-anchor="middle">Mesafe > 3.0 ise Outlier Anomali Alarmı!</text>
+            <text x="210" y="468" font-family="sans-serif" font-size="16" font-weight="700" fill="#831843"
+              text-anchor="middle">3. Adım: Canlı Euclidean Mesafe Kararı</text>
+            <text x="210" y="492" font-family="sans-serif" font-size="14" font-weight="700" fill="#db2777"
+              text-anchor="middle">Mesafe > 3.0 ise Outlier Anomali Alarmı!</text>
           </svg>
         </div>
       </div>
@@ -1211,7 +1221,7 @@
               tarafından paralel koşar.</li>
           </ul>
         </div>
-         <div style="text-align: center;">
+        <div style="text-align: center;">
           <img src="outlier.png" alt="outlier" />
         </div>
       </div>
