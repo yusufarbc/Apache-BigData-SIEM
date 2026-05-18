@@ -36,7 +36,8 @@ ANOMALY_THRESHOLD = float(os.getenv("ANOMALY_THRESHOLD", "3.0"))  # Significantl
 
 # Features used for ML
 # Removed dest_port because port numbers are not linear distances
-FEATURE_COLS = ["duration_log", "orig_bytes_log", "resp_bytes_log"]
+# Added contextual IP flags to differentiate internal vs external, and client vs server behavior
+FEATURE_COLS = ["duration_log", "orig_bytes_log", "resp_bytes_log", "is_dst_external", "is_src_server"]
 
 from pyspark.sql.types import BooleanType
 
@@ -68,12 +69,14 @@ def train_kmeans(feature_df):
     print(f"[NDR] Training K-Means model on {feature_df.count()} rows...")
     
     # Feature Engineering for training
-    from pyspark.sql.functions import log1p
+    from pyspark.sql.functions import log1p, when
     train_df = feature_df.na.fill(value=0.0, subset=["duration"]) \
                          .na.fill(value=0, subset=["orig_bytes", "resp_bytes"]) \
                          .withColumn("duration_log", log1p(col("duration"))) \
                          .withColumn("orig_bytes_log", log1p(col("orig_bytes"))) \
-                         .withColumn("resp_bytes_log", log1p(col("resp_bytes")))
+                         .withColumn("resp_bytes_log", log1p(col("resp_bytes"))) \
+                         .withColumn("is_dst_external", when(col("dest_ip").rlike("^(10\\.|192\\.168\\.|172\\.(1[6-9]|2[0-9]|3[0-1]))"), 0).otherwise(1)) \
+                         .withColumn("is_src_server", when(col("src_ip").isin(["192.168.1.250", "192.168.1.100"]), 1).otherwise(0))
 
     assembler = VectorAssembler(
         inputCols=FEATURE_COLS, 
@@ -172,15 +175,17 @@ class BatchProcessor:
         
         # 2. Inference Logic
         try:
-            # Feature Engineering: Log scaling to handle skewed distribution of bytes and duration
+            # Feature Engineering: Contextualize IP addresses and scale bytes/duration
             # We use log1p(x) = log(1+x) to avoid log(0) issues
-            from pyspark.sql.functions import log1p
+            from pyspark.sql.functions import log1p, when
             
             fe_df = batch_df.na.fill(value=0.0, subset=["duration"]) \
                            .na.fill(value=0, subset=["orig_bytes", "resp_bytes"]) \
                            .withColumn("duration_log", log1p(col("duration"))) \
                            .withColumn("orig_bytes_log", log1p(col("orig_bytes"))) \
-                           .withColumn("resp_bytes_log", log1p(col("resp_bytes")))
+                           .withColumn("resp_bytes_log", log1p(col("resp_bytes"))) \
+                           .withColumn("is_dst_external", when(col("dest_ip").rlike("^(10\\.|192\\.168\\.|172\\.(1[6-9]|2[0-9]|3[0-1]))"), 0).otherwise(1)) \
+                           .withColumn("is_src_server", when(col("src_ip").isin(["192.168.1.250", "192.168.1.100"]), 1).otherwise(0))
             
             # Prepare features
             assembler = VectorAssembler(inputCols=FEATURE_COLS, outputCol="raw_features", handleInvalid="skip")
@@ -214,6 +219,7 @@ class BatchProcessor:
                 col("kafka_ts").alias("ingest_ts"),  # Alias for Superset compatibility
                 "ts", "uid", "src_ip", "src_port", "dest_ip", "dest_port",
                 "proto", "service", "duration", "orig_bytes", "resp_bytes", "conn_state",
+                "is_dst_external", "is_src_server",
                 "cluster_id", "anomaly_score", "is_anomaly", "ingest_date"
             )
 
@@ -287,6 +293,8 @@ def main():
             orig_bytes LONG,
             resp_bytes LONG,
             conn_state STRING,
+            is_dst_external INT,
+            is_src_server INT,
             cluster_id INT,
             anomaly_score FLOAT,
             is_anomaly BOOLEAN
@@ -312,6 +320,8 @@ def main():
             orig_bytes LONG,
             resp_bytes LONG,
             conn_state STRING,
+            is_dst_external INT,
+            is_src_server INT,
             cluster_id INT,
             anomaly_score FLOAT,
             is_anomaly BOOLEAN
