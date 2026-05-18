@@ -178,27 +178,24 @@ For a detailed analysis of specific tiers, configurations, and forensic query li
 *   **[Kafka Ingestion Pipeline (KRaft Mode)](docs/Kafka_SIEM_Deep_Architecture_Analysis.md)** — High-throughput broker configurations, thread allocations, network protocols, and sub-millisecond topic partition topologies.
 *   **[Spark Structured Streaming NDR Engine](docs/Spark_SIEM_Pipeline_Detailed_Analysis.md)** — Real-time ETL stream transformations, dotted-key JSON parsing, and streaming online K-Means clustering mathematical modeling.
 
-### 🗄️ Metadata & Session Scaling
-*   **[Persistent PostgreSQL Metastore Core](docs/PostgreSQL_SIEM_Architecture_In_Depth.md)** — Standardizing metastore schemas, multi-user privilege control, and transactional stability for Hive and Superset metadata.
-*   **[Redis Caching Tier & Session Optimization](docs/Redis_SIEM_Architecture_And_Optimization.md)** — Highly concurrent dashboard caching, query performance tuning, and Apache Superset session security settings.
+### 🗄️ Metadata & Caching Tiers
+*   **[Database & Caching Tiers (PostgreSQL & Redis) Optimization](docs/Database_and_Caching_Tiers_Optimization.md)** — Unifying transaction ACID integrity, MVCC, B-Tree/GIN/BRIN indexing strategies, single-threaded Redis LFU caching, and multi-node HA cluster failovers.
 
 ### 📊 SOC Dashboards & Threat Hunting
 *   **[Superset SOC Visualization & Real-Time Alerts](docs/superset-guide.md)** — Interactive dashboard widget mappings, geo-threat coordinate allocations, and SQL Lab integration via Spark Thrift.
 *   **[Forensic Query & Threat Hunting Playbook](docs/EXAMPLE_QUERIES.md)** — Production-ready SQL/PySpark patterns for identifying active DDoS patterns, rapid port-scans, and data exfiltration beacons.
 
 ### 🚀 Operations & Deployment Guides
-*   **[Unified Verification Guide](docs/verification-guide.md)** — Phase-by-phase health verification script lists, CLI data reports, and failure isolation commands for the 13 container stack.
-*   **[NDR Network Dataset & Hyperparameter Guide](docs/ndr-dataset-guide.md)** — Standard cybersecurity dataset references (SecRepo, UNSW-NB15), volume mounting, and K-Means online tuning parameter details.
-*   **[Capacity & Performance Report](docs/CAPACITY.md)** — Container hardware footprints (CPU, memory, disk sizes), theoretical limits, and horizontal scaling strategies.
+*   **[Unified Operations, Sizing & Verification Guide](docs/Operations_and_Verification_Guide.md)** — Sizing capacities, 13-container microservice resource footprints, active healthchecks, and step-by-step troubleshooting.
 
 ---
 
 ## 📂 Repository Architecture
 
-* **[`config/`](file:///c:/Users/yusuf/Github/Apache-BigData-SIEM/config)** — Configuration manifests for Hadoop, Hive, Spark, Kafka, PostgreSQL, Superset, and Zeppelin environments.
-* **[`data/`](file:///c:/Users/yusuf/Github/Apache-BigData-SIEM/data)** — Reference guidelines and sample integration configurations for massive security logs (includes the [Data Integration Guide](file:///c:/Users/yusuf/Github/Apache-BigData-SIEM/data/README.md)).
-* **[`docs/`](file:///c:/Users/yusuf/Github/Apache-BigData-SIEM/docs)** — Comprehensive capacity studies, verification scenarios, example SQL queries, and service-specific blueprints.
-* **[`showcase/`](file:///c:/Users/yusuf/Github/Apache-BigData-SIEM/showcase)** — An interactive, media-rich HTML/CSS presentation summarizing the platform for presentations and security defenses.
+* **[`config/`](config)** — Configuration manifests for Hadoop, Hive, Spark, Kafka, PostgreSQL, Superset, and Zeppelin environments.
+* **[`data/`](data)** — Reference guidelines and sample integration configurations for massive security logs (includes the [Data Integration Guide](data/README.md)).
+* **[`docs/`](docs)** — Comprehensive capacity studies, verification scenarios, example SQL queries, and service-specific blueprints.
+* **[`showcase/`](showcase)** — An interactive, media-rich HTML/CSS presentation summarizing the platform for presentations and security defenses.
 
 ---
 *Built for resilient, petabyte-scale real-time Threat Intel & Defense.*

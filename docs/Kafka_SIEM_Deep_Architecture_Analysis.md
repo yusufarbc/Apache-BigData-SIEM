@@ -311,7 +311,7 @@ To control cloud storage costs, modern deployments leverage **Tiered Storage (KI
 
 Since Amazon S3 provides native, highly durable replication across multiple AZs, Kafka does not need to maintain three copies of the cold data. This reduces high-cost EBS block storage requirements by up to 90% and eliminates cross-AZ replication network traffic for older data, significantly lowering operational costs.
 
-Bulut altyapılarında performansı optimize etmek için ARM64 tabanlı AWS Graviton3 broker tipleri tercih edilmelidir. Bu tipler, geleneksel x86 mimarilerine göre %50 daha yüksek bellek bant genişliği ve %29'a varan oranda daha yüksek I/O throughput sağlayarak maliyet verimliliğini artırır.
+To optimize performance in cloud infrastructures, ARM64-based AWS Graviton3 broker instances should be preferred. These instances provide 50% higher memory bandwidth and up to 29% higher I/O throughput compared to traditional x86 architectures, significantly increasing cost efficiency.
 
 ---
 
@@ -327,3 +327,9 @@ For high-volume SIEM log ingestion pipelines, Apache Kafka is not a simple messa
 3. *Kafka Design and OS Page Cache*, Confluent, 2024.
 4. *KIP-500: Replace ZooKeeper with KRaft*, Kafka Improvement Proposals, 2023.
 5. *Tiered Storage (KIP-405) in Production*, Confluent Developer, 2024.
+
+---
+
+## 🔗 Navigation & Links
+*   ⬅️ **[Back to Root README](../README.md)**
+*   📂 **[Go to Technical Documentation Library](./)**

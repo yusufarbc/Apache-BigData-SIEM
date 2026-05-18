@@ -120,8 +120,8 @@ Data structures in Spark (DataFrames, Dataset APIs) are modeled as Resilient Dis
 * **Actions (Eager):** Statements like `count`, `collect`, or `writeStream` that trigger the execution of the recorded DAG.
 
 When an action is invoked, the `DAGScheduler` evaluates the logical graph and divides it into executable **Stages**.
-* **Narrow Dependencies (Dar Bağımlılık):** Operations where each partition of the parent RDD is used by at most one partition of the child RDD (e.g., `map`, `filter`). These run in parallel within the same execution stage.
-* **Wide Dependencies (Geniş Bağımlılık):** Operations requiring data partitions to be distributed across different physical nodes (e.g., `groupByKey`, `join`). These spark a **Shuffle** boundaries and initiate new execution stages.
+* **Narrow Dependencies:** Operations where each partition of the parent RDD is used by at most one partition of the child RDD (e.g., `map`, `filter`). These run in parallel within the same execution stage.
+* **Wide Dependencies:** Operations requiring data partitions to be distributed across different physical nodes (e.g., `groupByKey`, `join`). These spark a **Shuffle** boundaries and initiate new execution stages.
 
 ### Deterministic Lineage Recovery
 If a node hosting active data partitions crashes mid-query, Spark does not restart the entire pipeline. Instead, it consults the RDD's **Lineage**—a deterministic execution map detailing the exact steps required to reconstruct the missing partition from the raw source.
@@ -311,6 +311,21 @@ For security operations teams looking to minimize infrastructure management, ser
 
 ---
 
+## ⚙️ 6. Real-Time Online K-Means Anomaly Detection & Hyperparameters
+
+For real-time network detection and response (NDR) pipelines (executed via `streaming_kmeans.py`), Spark leverages an online clustering engine to classify network flows. Unlike traditional offline models, Spark’s Streaming K-Means continuously updates centroid coordinates as new mini-batches arrive, accommodating shifting network baseline behaviors.
+
+To achieve an optimal balance between anomaly detection sensitivity and reducing false positive alerts, we recommend tuning the following machine learning hyperparameters:
+
+| Hyperparameter | Recommended Value | Operational & System Impact |
+| :--- | :---: | :--- |
+| **`KMEANS_K`** | `8` | **Number of Clusters:** Specifies the baseline clustering centroids. For highly complex corporate backbones or diverse networks, test `10` or `12` centroids to capture sub-protocols. |
+| **`COLD_START_ROWS`** | `5000` | **Training Baseline Threshold:** The minimum number of log events required to train the initial cluster centroids before active anomaly scoring and real-time alerting are enabled. |
+| **`ANOMALY_THRESHOLD`** | `4.5` | **Anomaly Sensitivity:** Specified in standard deviations from the nearest cluster centroid. Lowering this value (e.g., `3.5`) increases alert sensitivity (more false positives); raising it (e.g., `5.5`) filters out minor noise. |
+| **`DECAY_FACTOR`** | `1.0` | **Centroid Memory/Decay:** Controls how past data influences current centroids. A value of `1.0` treats all historical data equally. Lower values (e.g., `0.9`) give more weight to newer connections, adapting to dynamic IP reassignments. |
+
+---
+
 ## 🏁 Conclusion
 
 Apache Spark 3.5.x serves as a highly performant distributed computation engine for high-throughput SIEM analytics. By utilizing off-heap byte management via Tungsten and optimizing physical queries using Catalyst and AQE skew-mitigation, Spark delivers bare-metal performance over complex datasets. Pairing deterministic Lineage recovery with RocksDB changelog checkpointing guarantees resilient, exactly-once processing over out-of-order Kafka event streams, while tuning dynamic shuffle partition sizes protects nodes from OOM failures. Deploying these architectures over Kubernetes or managed serverless platforms provides a highly scalable, stable foundation for real-time security analytics.
@@ -323,3 +338,9 @@ Apache Spark 3.5.x serves as a highly performant distributed computation engine 
 3. *Structured Streaming Programming Guide*, Apache Spark Documentation, 2025.
 4. *RocksDB Stateful Streaming Optimization on EMR*, AWS Architecture Blog, 2025.
 5. *Spark on Kubernetes: Scaling and Deployment Guide*, Databricks Developer Center, 2026.
+
+---
+
+## 🔗 Navigation & Links
+*   ⬅️ **[Back to Root README](../README.md)**
+*   📂 **[Go to Technical Documentation Library](./)**

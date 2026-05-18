@@ -126,7 +126,7 @@ To prevent this, QJM uses **Epoch Numbers** managed by the **ZooKeeper Failover 
 2. **Promised Epoch:** JournalNodes maintain a local state called `Promised Epoch`. When the Active NameNode sends edit packets, it includes its epoch number. JournalNodes accept the logs only if the epoch is greater than or equal to their `Promised Epoch`.
 3. **Failover Execution:** If the Active NameNode (Epoch 10) loses network connectivity, the ZooKeeper lock expires. ZKFC promotes the Standby NameNode, assigning it `Epoch: 11`.
 4. **Fencing:** The new Active NameNode connects to the JournalNodes and declares its new epoch (`Epoch: 11`). The JournalNodes update their `Promised Epoch` to 11.
-5. **Rejection:** If the isolated, former Active NameNode (Epoch 10) attempts to commit a transaction, the JournalNodes reject the write because its epoch is lower than their promised state. This yazılım-level fencing mechanism elegantly prevents split-brain anomalies.
+5. **Rejection:** If the isolated, former Active NameNode (Epoch 10) attempts to commit a transaction, the JournalNodes reject the write because its epoch is lower than their promised state. This software-level fencing mechanism elegantly prevents split-brain anomalies.
 
 ---
 
@@ -180,7 +180,7 @@ For security auditing, this is a major asset. If an attacker gains administrator
 
 ### 2. Retroactive Threat Hunting & Data Locality
 
-Tehlikeli Advanced Persistent Threats (APT) can remain undetected inside networks for months. When a SOC team receives new Indicators of Compromise (IoC) such as a malicious IP or file hash, they must scan years of historical petabyte-scale records.
+Dangerous Advanced Persistent Threats (APT) can remain undetected inside networks for months. When a SOC team receives new Indicators of Compromise (IoC) such as a malicious IP or file hash, they must scan years of historical petabyte-scale records.
 
 Moving petabytes of logs across networks to a central query system can easily saturate network links. HDFS resolves this by applying **Data Locality**—bringing the computation to the data:
 
@@ -236,3 +236,9 @@ While cloud storage offers elastic scaling, a 24/7 high-volume SIEM cluster that
 3. *Comparing Replication and Erasure Coding*, Cloudera Runtime, 2025.
 4. *S3A Performance Tuning Guide*, Apache Hadoop, 2025.
 5. *Data Locality Optimizations in Apache Spark*, R. Spitzer, 2023.
+
+---
+
+## 🔗 Navigation & Links
+*   ⬅️ **[Back to Root README](../README.md)**
+*   📂 **[Go to Technical Documentation Library](./)**

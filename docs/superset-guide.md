@@ -281,3 +281,9 @@ How to use these tools in a real incident response:
 | `Table not found: siem.logs_parsed` | Run the ETL job first: The `spark-etl` service should handle this automatically. |
 | Query timeout | Reduce date range or add `LIMIT` clause |
 | Empty results | Verify Kafka producers are running: `docker compose ps` |
+
+---
+
+## 🔗 Navigation & Links
+*   ⬅️ **[Back to Root README](../README.md)**
+*   📂 **[Go to Technical Documentation Library](./)**
