@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Apache Big Data SIEM | Distributed Ingestion & Anomaly Detection System</title>
+  <title>Apache-BigData-SIEM | Büyük Veri ile SIEM ve Anomali Tespiti</title>
   <link rel="icon" href="data:," />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
 
-  <!-- Chart.js for premium interactive visualizations -->
+  <!-- Canlı ve etkileşimli grafikler için Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- KaTeX for academic-grade LaTeX mathematical representations -->
+  <!-- Akademik düzeyde Matematiksel Formül Gösterimi için KaTeX -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"
@@ -73,7 +73,7 @@
       min-height: 100vh;
       max-height: 100vh;
       padding: 4vh 6vw 12vh 6vw;
-      /* Generous bottom padding for slide controls and presenter notes drawer */
+      /* Alt tarafta kontroller ve konuşmacı notları için geniş boşluk */
       border-bottom: 1px solid var(--border);
       display: flex;
       flex-direction: column;
@@ -152,7 +152,7 @@
       gap: 2.5rem;
       flex: 1;
       min-height: 0;
-      /* Prevent content overflow */
+      /* İçeriklerin taşmasını engeller */
       align-items: center;
       height: calc(100% - 4.5rem);
     }
@@ -216,7 +216,7 @@
       font-weight: 600;
     }
 
-    /* Interactive Navigation Bar */
+    /* İnteraktif Navigasyon Paneli */
     .controls {
       position: fixed;
       bottom: 24px;
@@ -339,7 +339,41 @@
       max-height: none !important;
     }
 
-    /* Presenter Notes Interface Drawer */
+    /* Simüle Edilmiş Panel Tasarımı */
+    .mock-dashboard {
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto 1fr;
+      gap: 12px;
+      width: 100%;
+      height: 100%;
+      color: #f8fafc;
+      font-size: 0.85rem;
+    }
+
+    .mock-widget {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 12px;
+    }
+
+    .mock-header {
+      grid-column: 1 / span 2;
+      background: #1e293b;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      color: #3b82f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Konuşmacı Notları Arayüz Elemanları */
     .speaker-notes-toggle {
       position: fixed;
       bottom: 24px;
@@ -488,6 +522,17 @@
       .speaker-notes-toggle {
         bottom: 90px;
       }
+
+      .infra-layout {
+        flex-direction: column;
+        height: auto;
+      }
+
+      .infra-table {
+        width: 100%;
+        display: block;
+        overflow-x: auto;
+      }
     }
   </style>
 
@@ -504,101 +549,117 @@
 </head>
 
 <body>
-  <!-- Speaker Notes Toggle and Drawer -->
-  <button class="speaker-notes-toggle" onclick="toggleSpeakerNotes()">🎙️ Speaker Notes</button>
+  <!-- Konuşmacı Notları Butonu ve Çekmecesi -->
+  <button class="speaker-notes-toggle" onclick="toggleSpeakerNotes()">🎙️ Konuşmacı Notları</button>
 
   <div class="speaker-notes-drawer" id="notesDrawer">
     <div class="drawer-header">
-      <h4>🎙️ Presenter / Speaker Notes</h4>
+      <h4>🎙️ Sunucu / Konuşmacı Notları</h4>
       <button onclick="toggleSpeakerNotes()">&times;</button>
     </div>
     <div class="drawer-content" id="notesContent">
-      Loading...
+      Yükleniyor...
     </div>
   </div>
-  <div class="progress" id="progress">Slide 1 / 19</div>
+  <div class="progress" id="progress">Slayt 1 / 19</div>
 
-  <!-- Interactive Navigation Controls -->
+  <!-- İnteraktif Navigasyon -->
   <div class="controls">
-    <button onclick="prevSlide()">◀ Prev</button>
-    <button onclick="toggleAutoplay()" id="playBtn">▶ Autoplay</button>
-    <button onclick="nextSlide()">Next ▶</button>
+    <button onclick="prevSlide()">◀ Önceki</button>
+    <button onclick="toggleAutoplay()" id="playBtn">▶ Otomatik Oynat</button>
+    <button onclick="nextSlide()">Sonraki ▶</button>
   </div>
 
   <div class="page" id="slides">
 
-    <!-- SLIDE 1: HERO COVER -->
+    <!-- SLIDE 1: HERO -->
     <header class="hero"
       style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; text-align: left; padding: 0 8vw; gap: 4rem;">
+      <!-- SOL KOLON: Akademik Bilgiler ve Başlıklar -->
       <div class="hero-content" style="flex: 1; display: flex; flex-direction: column; align-items: flex-start;">
 
-        <!-- University & Department Info -->
+        <!-- Üniversite ve Bölüm Bilgisi -->
         <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 25px;">
-          <img src="kbu_logo.webp" alt="Karabuk University Logo"
+          <img src="kbu_logo.webp" alt="Karabük Üniversitesi Logo"
             style="width: 110px; height: 110px; object-fit: contain; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.05));" />
           <div>
-            <h2 style="margin: 0; font-size: 2rem; color: #0f172a; font-weight: 800; letter-spacing: -0.5px;">Karabuk University</h2>
-            <p style="margin: 5px 0 0 0; font-size: 1.3rem; color: #3b82f6; font-weight: 600;">Department of Software Engineering</p>
-            <p style="margin: 2px 0 0 0; font-size: 1.1rem; color: var(--muted); font-weight: 500;">Master of Science Program</p>
+            <h2 style="margin: 0; font-size: 2rem; color: #0f172a; font-weight: 800; letter-spacing: -0.5px;">Karabük
+              Üniversitesi</h2>
+            <p style="margin: 5px 0 0 0; font-size: 1.3rem; color: #3b82f6; font-weight: 600;">Yazılım Mühendisliği
+              Anabilim Dalı</p>
+            <p style="margin: 2px 0 0 0; font-size: 1.1rem; color: var(--muted); font-weight: 500;">Yüksek Lisans
+              Programı</p>
           </div>
         </div>
 
-        <!-- Academic Seminar Badge -->
+        <!-- Ders ve Dönem Bilgisi -->
         <div class="badge"
           style="margin-bottom: 20px; font-size: 1.1rem; padding: 8px 20px; background: rgba(37,99,235,0.05);">
-          YAZ719 - Big Data Processing Techniques and Applications
+          YAZ719 - Büyük Veri İşleme Teknikleri ve Uygulamaları
         </div>
 
-        <!-- Thesis Title & Abstract Subtitle -->
-        <div class="title" style="font-size: 3.8rem; line-height: 1.15; margin-bottom: 20px; text-align: left;">Cybersecurity Anomaly<br />Detection System</div>
+        <!-- Ana Başlık ve Alt Başlık -->
+        <div class="title" style="font-size: 3.8rem; line-height: 1.15; margin-bottom: 20px; text-align: left;">Siber
+          Güvenlik Anomali<br />Tespit Sistemi</div>
         <div class="subtitle"
           style="font-size: 1.45rem; max-width: 100%; margin: 0; text-align: left; line-height: 1.5;">
-          A Big Data SIEM, Unsupervised Learning (K-Means), and Real-Time Rule-Based Detection Ecosystem Built on Apache Lakehouse Architecture.
+          Apache Lakehouse Mimarisi Üzerinde Yükselen Büyük Veri (Big Data) SIEM,<br />
+          Unsupervised Learning (K-Means) ve Gerçek Zamanlı Kural Motorlu Tespit Ekosistemi.
         </div>
 
-        <!-- Technology Pills -->
+        <!-- Teknoloji VCard (Pills) -->
         <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 25px; margin-bottom: 10px;">
           <span
-            style="background: #e65100; color: white; padding: 5px 14px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 4px 10px rgba(230,81,0,0.2);">Spark Streaming</span>
+            style="background: #e65100; color: white; padding: 5px 14px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 4px 10px rgba(230,81,0,0.2);">Spark
+            Streaming</span>
           <span
-            style="background: #231f20; color: white; padding: 5px 14px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 4px 10px rgba(35,31,32,0.2);">Kafka KRaft</span>
+            style="background: #231f20; color: white; padding: 5px 14px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 4px 10px rgba(35,31,32,0.2);">Kafka
+            KRaft</span>
           <span
-            style="background: #fbc02d; color: #333; padding: 5px 14px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 4px 10px rgba(251,192,45,0.2);">Hadoop HDFS</span>
+            style="background: #fbc02d; color: #333; padding: 5px 14px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 4px 10px rgba(251,192,45,0.2);">Hadoop
+            HDFS</span>
           <span
-            style="background: #fdd835; color: #333; padding: 5px 14px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 4px 10px rgba(253,216,53,0.2);">Apache Hive</span>
+            style="background: #fdd835; color: #333; padding: 5px 14px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 4px 10px rgba(253,216,53,0.2);">Apache
+            Hive</span>
           <span
             style="background: #0088cc; color: white; padding: 5px 14px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 4px 10px rgba(0,136,204,0.2);">Zeppelin</span>
           <span
             style="background: #00a699; color: white; padding: 5px 14px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 4px 10px rgba(0,166,153,0.2);">Superset</span>
         </div>
 
-        <!-- Presenter, Advisor & Date Info -->
+        <!-- Sunucu, Hoca ve Tarih Bilgisi (Grid Hizalaması) -->
         <div style="margin-top: 30px; padding-left: 20px; border-left: 4px solid var(--accent);">
           <div
             style="display: grid; grid-template-columns: max-content 1fr; gap: 8px 18px; align-items: center; font-size: 1.4rem; color: var(--text);">
-            <div style="text-align: right; font-weight: 500; color: var(--muted); font-size: 1.2rem;">Presented By:</div>
-            <div><strong>Yusuf Talha ARABACI</strong> <span style="font-size: 1.1rem; color: var(--muted);">(M.Sc. Student)</span></div>
+            <!-- Satır 1 -->
+            <div style="text-align: right; font-weight: 500; color: var(--muted); font-size: 1.2rem;">Hazırlayan:</div>
+            <div><strong>Yusuf Talha ARABACI</strong> <span style="font-size: 1.1rem; color: var(--muted);">(Yüksek
+                Lisans Öğrencisi)</span></div>
 
-            <div style="text-align: right; font-weight: 500; color: var(--muted); font-size: 1.2rem;">Advisor:</div>
-            <div><strong>Asst. Prof. Omer Faruk ACAR</strong></div>
+            <!-- Satır 2 -->
+            <div style="text-align: right; font-weight: 500; color: var(--muted); font-size: 1.2rem;">Ders Sorumlusu:
+            </div>
+            <div><strong>Dr. Öğr. Üyesi Ömer Faruk ACAR</strong></div>
 
-            <div style="text-align: right; font-weight: 500; color: var(--muted); font-size: 1.2rem;">Academic Semester:</div>
-            <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent);">2025-2026 Spring <span
-                style="color: var(--muted); font-weight: normal; font-size: 1.1rem;">(May 2026)</span></div>
+            <!-- Satır 3 -->
+            <div style="text-align: right; font-weight: 500; color: var(--muted); font-size: 1.2rem;">Akademik Dönem:
+            </div>
+            <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent);">2025-2026 Bahar <span
+                style="color: var(--muted); font-weight: normal; font-size: 1.1rem;">(Mayıs 2026)</span></div>
           </div>
         </div>
       </div>
 
-      <!-- Hero QR Code -->
+      <!-- SAĞ KOLON: QR Kod (DEVASA) -->
       <div class="hero-qr"
-        style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 420px;">
+        style="display: flex; flex-direction: column; align-items: center; justify-content: center; animation: slideUp 1.2s ease-out; min-width: 420px;">
         <div
           style="background: white; padding: 30px; border-radius: 30px; box-shadow: 0 35px 60px rgba(37, 99, 235, 0.2); border: 3px solid var(--border); display: inline-block; transform: scale(1.05);">
-          <img src="qrcode.svg" alt="Interactive Presentation QR Code" style="width: 350px; height: 350px; display: block;" />
+          <img src="qrcode.svg" alt="İnteraktif Sunum QR Kodu" style="width: 350px; height: 350px; display: block;" />
         </div>
         <span
           style="margin-top: 30px; font-size: 1.25rem; color: var(--accent); font-weight: 800; letter-spacing: 0.5px; background: rgba(37, 99, 235, 0.1); padding: 15px 30px; border-radius: 20px; border: 2px solid rgba(37,99,235,0.25); text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,0.06); line-height: 1.4;">
-          Scan to Connect to<br />this Interactive Presentation
+          Bu Etkileşimli Sunuma<br />Bağlanmak İçin Okutun
         </span>
       </div>
     </header>
@@ -606,29 +667,35 @@
 
     <!-- SLIDE 2: THE PROBLEM -->
     <section>
-      <h3>1) Why We Developed a Big Data SIEM?</h3>
+      <h3>1) Neden Big Data SIEM Geliştirdik?</h3>
       <div class="tech-grid">
         <div class="tech-desc">
-          <p>In modern enterprise networks processing millions of events per second (EPS), traditional SIEMs collapse under astronomical licensing fees and severe hardware constraints. This open-source Big Data SIEM architecture is designed to break these barriers and solve the logging bottlenecks:</p>
+          <p>Saniyede milyonlarca olayın (EPS) aktığı modern ağlarda, geleneksel SIEM'ler astronomik lisans maliyetleri
+            ve donanım darboğazlarına yenik düşer. Geliştirdiğimiz bu açık kaynaklı devasa Big Data SIEM mimarisi,
+            sınırları yıkarak bu sorunları kökten çözmektedir:</p>
           <ul class="presentation-list">
-            <li><strong>Cost-Effective Scalability:</strong> Leverages distributed open-source components to maximize hardware utilization and bypass licensing limits.</li>
-            <li><strong>Unlimited Distributed Storage:</strong> Employs Apache Hadoop HDFS to securely persist petabytes of chronological log archives.</li>
-            <li><strong>Hot/Cold Data Tiering:</strong> Performs sub-second analysis in RAM for active logs, archiving historical trails in the Hive Metastore.</li>
-            <li><strong>Hybrid Detection Model:</strong> Runs both deterministic SIEM rules and probabilistic Machine Learning anomaly models concurrently.</li>
+            <li><strong>Maliyet Etkin Ölçeklenebilirlik:</strong> Açık kaynaklı bileşenler ile donanım verimliliği
+              maksimize edilir.</li>
+            <li><strong>Sınırsız Dağıtık Depolama:</strong> Apache Hadoop HDFS sayesinde petabaytlarca ham log verisi
+              güvenle saklanır.</li>
+            <li><strong>Sıcak/Soğuk Veri Ayrımı:</strong> Canlı akışlar RAM üzerinde saniyeler içinde analiz edilirken
+              geçmiş veriler Hive ambarında depolanır.</li>
+            <li><strong>Hibrit Tespit Yeteneği:</strong> Hem deterministik (Kural Tabanlı) hem de olasılıksal (Makine
+              Öğrenmesi) analiz aynı anda koşar.</li>
           </ul>
         </div>
         <div style="text-align: center;">
           <img src="bigdata.jpg"
             style="max-width: 90%; max-height: 90%; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.08));"
-            alt="Big Data Security" />
+            alt="Big Data" />
         </div>
       </div>
     </section>
 
 
-    <!-- SLIDE 3: FULL ARCHITECTURE -->
+    <!-- SLIDE 18: FULL ARCHITECTURE -->
     <section>
-      <h3>2) The Big Picture: End-to-End Forensic Data Pipeline</h3>
+      <h3>2) Mimarinin Büyük Resmi: Uçtan Uca Veri Akışı</h3>
       <div
         style="text-align: center; margin-top: 1rem; height: 100%; display: flex; justify-content: center; align-items: center; min-height: 0;">
         <div class="mermaid" style="width: 100%; transform: scale(1.15); transform-origin: top center;">
@@ -640,28 +707,28 @@
           classDef storage fill:#16a34a,stroke:#15803d,stroke-width:3px,color:#ffffff,font-weight:bold,font-size:18px
           classDef catalog fill:#eab308,stroke:#a57a0c,stroke-width:3px,color:#ffffff,font-weight:bold,font-size:18px
 
-          subgraph DataSources ["1. Log Collection Layer (Data Ingestion)"]
+          subgraph DataSources ["1. Log Toplama Katmanı (Veri Girişi)"]
           direction LR
-          P1("Kafka Producer Container"):::producer
+          P1("Kafka Producer Konteyneri"):::producer
           end
 
-          K1("2. Buffering Tier: Apache Kafka (KRaft Temporary Storage)"):::buffer
+          K1("2. Tampon Katmanı: Apache Kafka (KRaft Geçici Depolama)"):::buffer
 
-          subgraph Processing ["3. In-Memory Processing Engine: Apache Spark Streaming"]
+          subgraph Processing ["3. Akış Analiz Motoru: Apache Spark Canlı Analiz"]
           direction LR
-          S1("ETL & Fault-Tolerant Schema Parsing"):::etl
-          ML("Anomaly Detection: Streaming K-Means"):::etl
-          RULE("SIEM: Rule-Based Decision Engine"):::etl
+          S1("ETL & Hata Toleranslı Ayrıştırma"):::etl
+          ML("Anomali Tespiti: Streaming K-Means"):::etl
+          RULE("SIEM: Kural Tabanlı Karar Motoru"):::etl
           end
 
-          subgraph StorageCatalog ["4. Storage & Schema Catalog (HDFS / Hive Metastore)"]
+          subgraph StorageCatalog ["4. Depolama & Katalog (Veri Gölü HDFS / Hive)"]
           direction LR
           HDFS("Hadoop HDFS (Parquet)"):::storage
-          HIVE("Hive Metastore Catalog Service"):::catalog
-          ZEP("Zeppelin Notebook (Ad-Hoc Threat Hunting)"):::catalog
+          HIVE("Hive Metastore Şema Hizmeti"):::catalog
+          ZEP("Zeppelin Notebook (Anlık SQL Sorguları)"):::catalog
           end
 
-          SUP("5. Visualization & Security Dashboards: Apache Superset"):::buffer
+          SUP("5. Raporlama Arayüzü: Apache Superset"):::buffer
 
           P1 --> K1
           K1 ==> Processing
@@ -675,17 +742,26 @@
     </section>
 
 
-    <!-- SLIDE 4: DATA SOURCE (SECREPO) -->
+    <!-- SLIDE 3: DATA SOURCE (SECREPO) -->
     <section>
-      <h3>3) Real-World Ingestion: SecRepo Cybersecurity Datasets</h3>
+      <h3>3) Gerçek Dünya Verisi: SecRepo Logları</h3>
       <div class="tech-grid" style="grid-template-columns: 1.2fr 1fr;">
         <div class="tech-desc">
-          <p>For high-fidelity architectural validation, we bypass synthetic laboratory networks. Instead, our platform ingests real-world enterprise traffic logs from the <strong>SecRepo.com</strong> repository containing organic scans and penetration indicators:
+          <p>Sistemimizin ispatı için izole yapay veriler değil, siber güvenlik araştırmacılarının altın standardı olan
+            <strong>SecRepo.com</strong> üzerindeki, sızma ve tarama saldırılarını organik barındıran devasa gerçek
+            dünya ağ trafiği (Zeek/Snort) işlenmektedir:
           </p>
           <ul class="presentation-list">
-            <li><strong>Active Zeek Network Telemetry:</strong> Ingests continuous <code>conn.log</code> (524 MB connection states) and <code>http.log</code> (54 MB transactions) alongside `dns`, `ssl`, and `weird` anomaly signals.</li>
-            <li><strong>Integrated Snort Alarms:</strong> Maps and correlates Snort threat signature files (<code>maccdc2012_fast_alert</code> and <code>maccdc2012_full_alert</code>) in parallel.</li>
-            <li><strong>Why Exclude PCAP Files?</strong> Raw PCAP processing imposes high packet decoding overhead. Streaming structured Zeek and Snort text lines directly preserves sub-second analytical latencies in the distributed ingestion pipe.</li>
+            <li><strong>Kullanılan Aktif Zeek Logları:</strong> Ana omurgayı oluşturan <code>conn.log</code> (524MB) ile
+              <code>http.log</code> (54MB), <code>dns.log</code>, <code>ssl.log</code>, <code>dhcp.log</code> ve
+              sıradışı durumlar için <code>weird.log</code> oturum logları.
+            </li>
+            <li><strong>Kullanılan Aktif Snort Logları:</strong> Tehdit imzalarını ve alarm uyarılarını barındıran
+              <code>maccdc2012_fast_alert</code> ve <code>maccdc2012_full_alert</code> logları sisteme dahil edilmiştir.
+            </li>
+            <li><strong>Neden PCAP Dosyaları Seçilmedi?</strong> Ağ paketlerini çözme (packet decoding) maliyetini
+              sıfırlamak ve dağıtık akış pipeline'ında gerçek zamanlı performansı korumak amacıyla ham
+              PCAP dosyaları elenmiş, doğrudan yapılandırılmış Zeek ve Snort logları beslenmiştir.</li>
           </ul>
         </div>
         <div
@@ -698,39 +774,52 @@
             <svg viewBox="0 0 24 24" style="width:24px; height:24px;" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="#16a34a" />
             </svg>
-            SecRepo Cybersecurity Dataset Repository (conn.log)
+            SecRepo Siber Güvenlik Veri Kümesi Deposu (conn.log)
           </p>
         </div>
       </div>
     </section>
 
 
-    <!-- SLIDE 5: PYTHON PRODUCER -->
+    <!-- SLIDE 4: PYTHON PRODUCER -->
     <section>
-      <h3>4) Ingestion Layer: Multi-Stream Kafka Producer Container</h3>
+      <h3>4) Veri Toplama Hattı: Kafka Producer Konteyneri</h3>
       <div class="tech-grid" style="grid-template-columns: 1fr;">
         <div class="tech-desc">
-          <p>The gateway of our analytical platform is a specialized Kafka Producer container engineered for stability and low latency:</p>
+          <p>Mimarinin veri giriş kapısı, karmaşık bir mühendislik yerine stabiliteye odaklanarak tasarlanan özel Kafka
+            Producer mikroservisidir:</p>
           <ul class="presentation-list">
-            <li><strong>Direct Volume Mount:</strong> Scans the local <code>/data</code> path read-only, fetching massive log tables (conn, http, dns, ssl) without disk footprint copies.</li>
-            <li><strong>Throttled Traffic Simulation:</strong> Exposes configurable emission rates (e.g., `2,000` rows/second) to stresses-test the Spark consumer under steady volumetric loads.</li>
-            <li><strong>Intelligent Topic Routing:</strong> Automatically maps specific network logs to target broker pipelines (<code>real_network_logs</code>, <code>web-logs</code>, <code>dns-logs</code>, <code>ssl-logs</code>), converting historical databases into active streams.</li>
+            <li><strong>Doğrudan Volume Okuma (Volume Mount):</strong> Konteyner, <code>/data</code> dizinine mount
+              edilen
+              tüm Zeek loglarını (örn: <code>conn.log</code>, <code>http.log</code>, <code>dns.log</code>,
+              <code>ssl.log</code>)
+              read-only olarak tarar ve akışa sokar.</li>
+            <li><strong>Öncelikli Dosya Akışı:</strong> Konfigürasyon, kritik logları önceliklendirir ve mevcut dosyalar
+              arasında sıralı/round-robin akış yapar (conn, http, dns, ssl, ssh, files, weird).</li>
+            <li><strong>Çoklu Topic Yönlendirmesi:</strong> Log tipi bazlı Kafka topic'lerine dağıtım yapılır
+              (<code>real_network_logs</code>, <code>web-logs</code>, <code>dns-logs</code>, <code>ssl-logs</code>,
+              <code>ssh-logs</code>).
+              Böylece statik veri seti canlı ağ trafiği gibi işlenir.</li>
           </ul>
         </div>
       </div>
     </section>
 
 
-    <!-- SLIDE 6: KAFKA -->
+    <!-- SLIDE 5: KAFKA -->
     <section>
-      <h3>5) Ingestion Buffering: Apache Kafka (KRaft Mode)</h3>
+      <h3>5) Tampon ve Mesajlaşma: Apache Kafka (KRaft)</h3>
       <div class="tech-grid">
         <div class="tech-desc">
-          <p>Apache Kafka functions as the platform's high-speed nervous system, buffering volumetric events and protecting the downstream analytics core during severe DDoS attacks:</p>
+          <p>Apache Kafka, devasa siber saldırılardaki veri fırtınalarını (EPS patlamalarını) emen, kayıpsız ileten ve
+            analiz motorunun çökmesini engelleyen ultra hızlı sinir ağımızdır:</p>
           <ul class="presentation-list">
-            <li><strong>KRaft (ZooKeeperless Raft Mode):</strong> Eliminates external synchronization clusters, managing internal coordination directly in the JVM for rapid failover.</li>
-            <li><strong>Resilient Backpressure Safeguard:</strong> Retains high-volume spikes in sequential disk offsets, preventing memory exhaustion on analytical workers.</li>
-            <li><strong>Balanced Partition Routing:</strong> Parallelizes event reads across distinct partition streams, guaranteeing a uniform workload across Spark worker nodes.</li>
+            <li><strong>KRaft (Kafka Raft Metadata Mode):</strong> Zookeeper bağımlılığı tamamen kaldırılarak cluster
+              içi koordinasyon hızlandırılmıştır.</li>
+            <li><strong>Log Buffering & Backpressure (Kuyruk Tamponlama):</strong> Yoğun saldırı anlarında (EPS
+              patlamaları) logları disk tamponunda tutarak analiz motorunun çökmesini önler.</li>
+            <li><strong>Topic Bölümleme (Partitioning):</strong> Paralel okuma kanalları sunarak Spark streaming
+              motorunun tüm worker'ları üzerinde veriyi dengeli işlemesini sağlar.</li>
           </ul>
         </div>
         <div style="text-align: center;">
@@ -742,16 +831,21 @@
     </section>
 
 
-    <!-- SLIDE 7: SPARK -->
+    <!-- SLIDE 6: SPARK -->
     <section>
-      <h3>6) Analytics Engine: Apache Spark Structured Streaming</h3>
+      <h3>6) Analiz Kalbi: Apache Spark Akış İşleme</h3>
       <div class="tech-grid">
         <div class="tech-desc">
-          <p>Apache Spark acts as the analytical core of our architecture. Working entirely in-memory, it parses, transforms, and runs K-Means anomaly boundaries at sub-second speeds:</p>
+          <p>Dağıtık mimarimizin beyni olan Apache Spark; belleği (In-Memory) doğrudan kullanarak saniyeler altı
+            reaksiyon süresiyle milyonlarca logu işler, temizler (ETL) ve makine öğrenmesi algoritmalarını paralel
+            koşturur:</p>
           <ul class="presentation-list">
-            <li><strong>Structured Streaming:</strong> Implements declarative, fault-tolerant schema-on-read pipelines integrated directly with the Spark SQL catalyst compiler.</li>
-            <li><strong>Micro-Batching Execution:</strong> Periodically queries active Kafka offsets (e.g., every 5-10 seconds), running complex threat checks across millions of rows in RAM.</li>
-            <li><strong>Project Tungsten and Catalyst:</strong> Bypasses standard JVM heap limitations using off-heap allocations, optimizing CPU cache locality for rapid data processing.</li>
+            <li><strong>Structured Streaming:</strong> SQL motoruyla entegre, deklaratif akış sorgulaması ve
+              schema-on-read (okurken şema çözme) gerçekleştirir.</li>
+            <li><strong>Micro-Batching (Saniyeler Altı Tepki Süresi):</strong> Kafka kuyruğunu periyodik olarak okur,
+              saniyeler içinde tehdit analizlerini tamamlar.</li>
+            <li><strong>Project Tungsten & Catalyst:</strong> Dağıtık işlem optimizasyonu yaparak JVM bellek yönetimini
+              optimize eder ve log işleme hızını zirveye taşır.</li>
           </ul>
         </div>
         <div style="text-align: center;">
@@ -763,16 +857,20 @@
     </section>
 
 
-    <!-- SLIDE 8: HADOOP -->
+    <!-- SLIDE 7: HADOOP -->
     <section>
-      <h3>7) Distributed Storage: Hadoop HDFS Data Lake</h3>
+      <h3>7) Veri Gölü: Dağıtık HDFS Depolama</h3>
       <div class="tech-grid">
         <div class="tech-desc">
-          <p>To archive massive event trails safely, the platform distributes raw and parsed logs across decentralized storage blocks using Hadoop Distributed File System (HDFS):</p>
+          <p>Petabaytlarca ağ logunu ve anomali geçmişini asla kaybetmemek adına, veriyi birden fazla sunucuya
+            klonlayarak (replication) hata toleransını zirveye taşıyan HDFS (Hadoop) kullanılmıştır:</p>
           <ul class="presentation-list">
-            <li><strong>NameNode/DataNode Isolation:</strong> Records system directories and cluster allocations on the NameNode, keeping the actual raw blocks distributed on DataNodes.</li>
-            <li><strong>Reliable Block Replication:</strong> Clones blocks across multiple DataNodes (2x replication) to protect threat archives against sudden physical drive crashes.</li>
-            <li><strong>Scale-Out Flexibility:</strong> Horizontally extends storage space on-the-fly by joining new DataNode containers without disrupting active streaming queries.</li>
+            <li><strong>NameNode & DataNode Mimarisi:</strong> Verinin metadata haritası NameNode'da tutulurken, gerçek
+              log blokları DataNode'larda saklanır.</li>
+            <li><strong>Yüksek Hata Toleransı:</strong> Her log bloğu varsayılan olarak 2 farklı DataNode üzerine
+              yedeklenerek (replication) disk arızalarına karşı korunur.</li>
+            <li><strong>Yatayda Genişleme (Scale-Out):</strong> Küme genelinde yeni DataNode sunucuları eklenerek
+              depolama kapasitesi kesintisiz genişletilir.</li>
           </ul>
         </div>
         <div style="text-align: center;">
@@ -784,16 +882,21 @@
     </section>
 
 
-    <!-- SLIDE 9: HIVE -->
+    <!-- SLIDE 8: HIVE -->
     <section>
-      <h3>8) Structured Warehousing: Apache Hive & Parquet</h3>
+      <h3>8) Veri Ambarı: Apache Hive & Parquet</h3>
       <div class="tech-grid">
         <div class="tech-desc">
-          <p>Apache Hive bridges the gap between raw block files and structured database queries, exposing the HDFS data lake to standard SQL interfaces:</p>
+          <p>HDFS üzerinde yatan ham devasa dosyaları, milisaniyelik hızla sorgulanabilen SQL tablolarına dönüştüren
+            zeka katmanımız Apache Hive'dır:</p>
           <ul class="presentation-list">
-            <li><strong>Hive Metastore (HMS):</strong> Manages schemas and maps physical directory paths, sharing catalog configurations with both Spark and Superset.</li>
-            <li><strong>Columnar Parquet Format:</strong> Structures records into columns instead of rows. Threat queries reading specific columns (e.g., `src_ip`) completely skip other fields, minimizing I/O bottlenecks.</li>
-            <li><strong>Dynamic Date Partitioning:</strong> Organizes directories based on date keys (<code>ingest_date</code>). Historical audits prune away unrelated folders instantly, accelerating queries logarithmically.</li>
+            <li><strong>Hive Metastore:</strong> Veri şemalarını ve HDFS yollarını yönetir, bu tanımları Spark SQL ve
+              Apache Superset ile ortaklaştırır.</li>
+            <li><strong>Kolon Bazlı Parquet Formatı:</strong> Loglar kolon bazlı depolanarak sadece sorgulanan alanların
+              (örn: sadece <code>src_ip</code>) okunmasını sağlar, disk I/O'yu azaltır.</li>
+            <li><strong>Tarih Bazlı Bölümleme (Date Partitioning):</strong> Tüm loglar <code>ingest_date</code>
+              (yıl-ay-gün)
+              bazında klasörlenerek tarih aralığı sorgularının ışık hızında çalışması sağlanır.</li>
           </ul>
         </div>
         <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 15px;">
@@ -805,16 +908,20 @@
     </section>
 
 
-    <!-- SLIDE 10: ZEPPELIN -->
+    <!-- SLIDE 9: ZEPPELIN -->
     <section>
-      <h3>9) Interactive Threat Hunting: Apache Zeppelin</h3>
+      <h3>9) Etkileşimli Analiz: Apache Zeppelin</h3>
       <div class="tech-grid">
         <div class="tech-desc">
-          <p>An interactive, notebook-style analytical playground that allows SOC threat hunters to explore billions of records in seconds using Spark SQL:</p>
+          <p>Güvenlik analistlerinin (SOC) milyarlarca satır arasında saniyeler içinde tehdit avcılığı (Threat Hunting)
+            yapabilmesi için kurulan interaktif PySpark sorgu laboratuvarımızdır:</p>
           <ul class="presentation-list">
-            <li><strong>Spark SQL Interpreter:</strong> Runs direct, complex ANSI SQL queries across historical Hive data lake tables with zero environment setup.</li>
-            <li><strong>Parametric Query Binding:</strong> Exposes interactive form widgets to let analysts filter queries by custom IP scopes or port parameters on the fly.</li>
-            <li><strong>Instant Visual Triage:</strong> Plots large query outputs into clean bar graphs, pie charts, and chronological trends directly inside the notebook.</li>
+            <li><strong>Spark SQL Interpreter (Yorumlayıcı):</strong> Hive tablolarında biriken milyonlarca log üzerinde
+              doğrudan ANSI SQL sorguları koşturulur.</li>
+            <li><strong>Dinamik Form Desteği (Variable Binding):</strong> Formlar ve filtreler eklenerek analistlerin
+              parametrik tehdit avcılığı yapması kolaylaştırılır.</li>
+            <li><strong>Hızlı Görsel Analiz:</strong> Büyük veri sorgu sonuçlarını saniyeler içinde pasta grafikleri,
+              zaman serileri ve bar grafiklerine döker.</li>
           </ul>
         </div>
         <div style="text-align: center;">
@@ -826,16 +933,21 @@
     </section>
 
 
-    <!-- SLIDE 11: SUPERSET -->
+    <!-- SLIDE 10: SUPERSET -->
     <section>
-      <h3>10) SOC Dashboard & Analytics: Apache Superset</h3>
+      <h3>10) SOC Raporlama Paneli: Apache Superset</h3>
       <div class="tech-grid">
         <div class="tech-desc">
-          <p>Our real-time Security Operations Center (SOC) dashboard. It maps incoming logs, Spark ML classifications, and threat intelligence events on unified screens connected via JDBC to the Spark Thrift server:</p>
+          <p>Karmaşık büyük veri operasyonlarının sonuçlarını, karar vericiler ve yöneticiler için saniyeler içinde
+            anlaşılır görsel bir ziyafete dönüştüren, canlı komuta kontrol (SOC) raporlama merkezimizdir. Hive Server2
+            JDBC katmanı üzerinden doğrudan veri gölüne bağlanır:</p>
           <ul class="presentation-list">
-            <li><strong>Real-Time Threat Visualization:</strong> Monitors system health metrics, incoming event rates (EPS), and active alarms in real-time.</li>
-            <li><strong>12-Column Responsive Layout:</strong> Expands and organizes charts to fit widescreen displays, presenting comprehensive forensic details (IPs, ports, anomaly scores).</li>
-            <li><strong>GeoIP Heatmaps:</strong> Enriches external IP signals with geographic coordinates, plotting international attacks on an interactive world map for quick triage.</li>
+            <li><strong>Gerçek Zamanlı Durum İzleme:</strong> Gelen tüm alarmların, anomali skorlarının ve log
+              hacimlerinin anlık grafikleri tek ekranda izlenir.</li>
+            <li><strong>Etkileşimli Geniş Ekran Tasarımı:</strong> Son yaptığımız güncellemeyle tablolar 12 sütun
+              genişliğinde ve tüm detaylarıyla (IP, Port, Skor) sunulur.</li>
+            <li><strong>Coğrafi Isı Haritası (Geographic Heatmap):</strong> Entegre GeoIP verileri sayesinde dış
+              dünyadan gelen saldırıların ülkeleri dünya haritasında canlı parıldar.</li>
           </ul>
         </div>
         <div style="text-align: center;">
@@ -847,16 +959,20 @@
     </section>
 
 
-    <!-- SLIDE 12: POSTGRESQL & REDIS -->
+    <!-- SLIDE 11: POSTGRESQL & REDIS -->
     <section>
-      <h3>11) Performance Hardening: PostgreSQL & Redis Cache</h3>
+      <h3>11) Performans ve Şema: PostgreSQL & Redis</h3>
       <div class="tech-grid">
         <div class="tech-desc">
-          <p>Infrastructure accelerators backing our distributed SIEM to guarantee low-latency dashboard loads and stable metadata tracking:</p>
+          <p>Bu devasa dağıtık orkestranın ışık hızında çalışması ve sunum grafiklerinin anında yüklenmesi için kritik
+            altyapı ivmelendiricilerimiz:</p>
           <ul class="presentation-list">
-            <li><strong>PostgreSQL Metastore (ACID Core):</strong> Formats and tracks table schemas for the Hive Metastore and persists user credentials and widget settings for Apache Superset.</li>
-            <li><strong>Redis LFU Cache:</strong> Caches repetitive analytical queries from concurrent SOC dashboards, serving recurring charts in milliseconds rather than query cold storage.</li>
-            <li><strong>Reduced Data Lake Load:</strong> Protects Hive and HDFS disks from query saturation during high analyst concurrency.</li>
+            <li><strong>PostgreSQL (Kalıcı Şema Deposu):</strong> Hive Metastore'un veri tablolarının şema tanımlarını
+              ve Superset panellerinin kullanıcı/grafik metadatalarını kalıcı olarak saklar.</li>
+            <li><strong>Redis (Dağıtık Önbellek Katmanı):</strong> Superset panellerinde koşturulan mükerrer SQL
+              sorgularını önbellekleyerek jüri sunumunda grafiklerin milisaniyeler seviyesinde yüklenmesini sağlar.</li>
+            <li><strong>Sistem Performans Katkısı:</strong> Veri ambarına giden yükü azaltarak bellek içi hızı tavan
+              yaptırır.</li>
           </ul>
         </div>
         <div>
@@ -871,55 +987,70 @@
     </section>
 
 
-    <!-- SLIDE 13: FEATURE ENGINEERING -->
+    <!-- SLIDE 12: SECREPO LOGS & FEATURE ENGINEERING -->
     <section>
-      <h3>12) Threat Context: Contextual Feature Engineering</h3>
+      <h3>12) Siber Zeka: Bağlamsal Öznitelik Mühendisliği</h3>
       <div class="tech-grid">
         <div class="tech-desc">
-          <p>To eliminate false positives, our streaming pipeline enriches network logs with crucial security context before training the unsupervised model:</p>
+          <p>Modelin "Yalancı Alarmları (False Positive)" önlemesi için, veri setine sadece hacimsel istatistikler
+            değil, <strong>Siber Güvenlik Bağlamı (Context)</strong> kazandırılmıştır:</p>
           <ul class="presentation-list">
-            <li><strong>Why Exclude Raw IPs?</strong> IP strings are categorical descriptors, not continuous values. Feeding raw IPs directly into Euclidean distance calculations is a mathematical violation that triggers the curse of dimensionality.</li>
-            <li><strong>Contextual PySpark Flags:</strong> Replaces IP addresses with numeric binary indicators (0/1) extracted via high-speed regex logic in the Spark ingestion stream:</li>
-            <li><strong>1. External Target Flag (<code>is_dst_external</code>):</strong> Evaluates if destination IPs resolve outside RFC1918 private subnets (e.g., 10.0.0.0/8, 192.168.0.0/16).</li>
-            <li><strong>2. Server Role Flag (<code>is_src_server</code>):</strong> Identifies if the source host matches enterprise servers. This ensures massive, legitimate backup traffic is separated from external data exfiltration anomalies.</li>
+            <li><strong>Neden Ham IP'ler Modele Verilmedi?</strong> IP adresleri sayısal değil, kategorik kimliklerdir.
+              K-Means (Öklid Uzaklığı) algoritmasına ham IP vermek matematiksel bir hatadır ve boyutluluk lanetine
+              (Curse of Dimensionality) yol açar.</li>
+            <li><strong>Bağlamsal IP Bayrakları (Contextual Flags):</strong> IP kimlikleri modele verilmek yerine, Regex
+              ve UDF'ler ile anlamlı siber güvenlik özelliklerine (0/1) dönüştürüldü.</li>
+            <li><strong>1. İç/Dış Ağ Bayrağı (<code>is_dst_external</code>):</strong> Hedef IP'nin RFC1918 özel blokta
+              (192.168.x.x vb.) olup olmadığını hesaplar.</li>
+            <li><strong>2. Sunucu Rolü (<code>is_src_server</code>):</strong> Kaynak IP'nin şirketteki kritik bir File
+              Server olup olmadığını belirler. Böylece yasal devasa sunucu trafiği ile dış dünyaya veri sızdıran (Data
+              Exfiltration) malware trafiği birbirinden kesin olarak ayrılır.</li>
           </ul>
         </div>
         <div
           style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: white; border: 1px solid var(--border); border-radius: 12px; padding: 15px 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); min-height: 0;">
           <h4
             style="margin: 0 0 10px 0; color: var(--accent-orange); font-size: 1.15rem; font-weight: bold; text-align: center;">
-            Contextual Pipeline Geometry</h4>
+            Bağlamsal Öznitelik Mimari Akışı</h4>
           <svg viewBox="0 0 420 420" class="diagram-svg" style="width: 100%; height: auto; max-height: none;"
             xmlns="http://www.w3.org/2000/svg">
+            <!-- Flow Step 1: Ingestion -->
             <rect x="30" y="10" width="360" height="64" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" />
             <text x="210" y="34" font-family="sans-serif" font-size="14" font-weight="bold" fill="#0f172a"
-              text-anchor="middle">Raw Zeek Stream (conn.log)</text>
-            <text x="210" y="54" font-family="sans-serif" font-size="12" fill="#64748b" text-anchor="middle">duration, bytes, src_ip, dest_ip</text>
+              text-anchor="middle">Ham Zeek Akışı (conn.log)</text>
+            <text x="210" y="54" font-family="sans-serif" font-size="12" fill="#64748b" text-anchor="middle">duration,
+              bytes, src_ip, dest_ip</text>
 
             <line x1="210" y1="74" x2="210" y2="105" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
             <polygon points="210,110 205,100 215,100" fill="#94a3b8" />
 
+            <!-- Flow Step 2: Contextual Engine -->
             <rect x="30" y="110" width="360" height="64" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
             <text x="210" y="136" font-family="sans-serif" font-size="14" font-weight="bold" fill="#1e3a8a"
-              text-anchor="middle">Step 1: Context Enrichment</text>
-            <text x="210" y="156" font-family="sans-serif" font-size="12" fill="#2563eb" text-anchor="middle">IP Maps -> is_dst_external, is_src_server</text>
+              text-anchor="middle">1. Adım: Bağlam (Context) Üretimi</text>
+            <text x="210" y="156" font-family="sans-serif" font-size="12" fill="#2563eb" text-anchor="middle">IP'ler ->
+              is_dst_external, is_src_server</text>
 
             <line x1="210" y1="174" x2="210" y2="200" stroke="#3b82f6" stroke-width="2" />
             <polygon points="210,205 205,195 215,195" fill="#3b82f6" />
 
+            <!-- Flow Step 3: Logaritmik Ölçekleme -->
             <rect x="30" y="210" width="360" height="84" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="2" />
             <text x="210" y="238" font-family="sans-serif" font-size="14" font-weight="bold" fill="#7c2d12"
-              text-anchor="middle">Step 2: Logarithmic Scaling (log1p)</text>
+              text-anchor="middle">2. Adım: Çarpıklık Giderme (log1p)</text>
             <text x="210" y="258" font-family="sans-serif" font-size="12" font-weight="bold" fill="#ea580c"
               text-anchor="middle">duration_log, bytes_log</text>
-            <text x="210" y="276" font-family="sans-serif" font-size="11" fill="#9a3412" text-anchor="middle">Skewed byte distribution is normalized</text>
+            <text x="210" y="276" font-family="sans-serif" font-size="11" fill="#9a3412" text-anchor="middle">Ağır
+              çarpık
+              byte dağılımı normalleşir</text>
 
             <line x1="210" y1="294" x2="210" y2="320" stroke="#ea580c" stroke-width="2" />
             <polygon points="210,325 205,315 215,315" fill="#ea580c" />
 
+            <!-- Flow Step 4: ML Ready -->
             <rect x="30" y="320" width="360" height="64" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="2" />
             <text x="210" y="346" font-family="sans-serif" font-size="14" font-weight="bold" fill="#14532d"
-              text-anchor="middle">ML-Ready Context Vector</text>
+              text-anchor="middle">K-Means İçin Hazır Bağlamsal Vektör</text>
             <text x="210" y="364" font-family="sans-serif" font-size="12" font-weight="bold" fill="#16a34a"
               text-anchor="middle">duration, bytes, is_external, is_server</text>
           </svg>
@@ -928,21 +1059,25 @@
     </section>
 
 
-    <!-- SLIDE 14: K-MEANS MATEMATİKSEL ALTYAPISI -->
+    <!-- SLIDE 13: K-MEANS MATEMATİKSEL ALTYAPISI -->
     <section>
-      <h3>13) Cyber Intelligence: Machine Learning Mathematical Model</h3>
+      <h3>13) Siber Zeka: ML Matematiksel Altyapısı</h3>
       <div class="tech-grid">
         <div class="tech-desc" style="padding-right: 5px;">
-          <p style="margin-bottom: 8px;">The mathematical pipeline executed inside Spark Structured Streaming to classify standard activities and isolate outlying exceptions:</p>
+          <p style="margin-bottom: 8px;">Ağ akışındaki normal dışı sapmaları yakalamak amacıyla kurulan K-Means
+            modelinin matematiksel şeması:</p>
           <ul class="presentation-list" style="gap: 0.35rem;">
-            <li><strong>Objective Function (WSSSE):</strong> Assigns $n$ flow coordinates to $k=8$ centroids ($\mu_i$) to minimize variances:
+            <li><strong>Küme Maliyeti (WSSSE):</strong> Verilen $n$ ağ kaydını, küme içi hata kareleri toplamını
+              minimize eden $k=8$ küme merkezine ($\mu_i$) dağıtır:
               <div class="math-card"
                 style="padding: 6px; margin: 3px 0; font-size: 1.15rem; background: var(--panel-2); border-radius: 6px;">
                 $$\arg \min_S \sum_{i=1}^k \sum_{x \in S_i} \| x - \mu_i \|^2$$
               </div>
             </li>
-            <li><strong>StandardScaler Scaling:</strong> Normalizes features to $Mean=0$ and $Variance=1$ to prevent large byte fields from dominating brief connection durations.</li>
-            <li><strong>Euclidean Distance Metric:</strong> Calculates the real-time distance ($d$) of new flows ($f$) to their assigned cluster centroid ($c$):
+            <li><strong>Z-Skor Standardizasyonu:</strong> Euclidean mesafesi hesaplanırken büyük bayt verilerinin küçük
+              duration değerlerini domine etmesini engeller ($Ortalama=0$, $Varyans=1$).</li>
+            <li><strong>Mesafe Formülü:</strong> Gelen her akışın ($f$) kendi atandığı küme merkezine ($c$) olan
+              mesafesi canlı olarak hesaplanır:
               <div class="math-card"
                 style="padding: 6px; margin: 3px 0; font-size: 1.15rem; background: var(--panel-2); border-radius: 6px;">
                 $$d(f, c) = \sqrt{\sum_{j=1}^m (f_j - c_{cluster\_id, j})^2}$$
@@ -954,167 +1089,197 @@
           style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: white; border: 1px solid var(--border); border-radius: 12px; padding: 15px 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); min-height: 0;">
           <h4
             style="margin: 0 0 10px 0; color: var(--accent); font-size: 1.15rem; font-weight: bold; text-align: center;">
-            Z-Score Standardisation & Classification</h4>
+            Z-Skor ve Matematiksel Model Akışı</h4>
           <svg viewBox="0 0 420 520" class="diagram-svg" style="width: 100%; height: 100%; max-height: 480px;"
             xmlns="http://www.w3.org/2000/svg">
+            <!-- Flow Step 1: VectorAssembler -->
             <rect x="30" y="10" width="360" height="70" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" />
             <text x="210" y="36" font-family="sans-serif" font-size="18" font-weight="700" fill="#0f172a"
-              text-anchor="middle">Step 1: VectorAssembler</text>
+              text-anchor="middle">1. Adım: VectorAssembler</text>
             <text x="210" y="58" font-family="sans-serif" font-size="14" fill="#64748b"
               text-anchor="middle">duration_log, orig_bytes_log, resp_bytes_log</text>
 
+            <!-- Arrow 1 -->
             <line x1="210" y1="85" x2="210" y2="125" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
             <polygon points="210,130 205,120 215,120" fill="#94a3b8" />
 
+            <!-- Flow Step 2: raw_features -->
             <rect x="30" y="140" width="360" height="70" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
             <text x="210" y="170" font-family="sans-serif" font-size="16" font-weight="700" fill="#1e3a8a"
-              text-anchor="middle">Assembled Vector (raw_features)</text>
+              text-anchor="middle">Birleştirilmiş Vektör (raw_features)</text>
 
+            <!-- Arrow 2 -->
             <line x1="210" y1="210" x2="210" y2="250" stroke="#3b82f6" stroke-width="2" />
             <polygon points="210,255 205,245 215,245" fill="#3b82f6" />
 
+            <!-- Flow Step 3: StandardScaler -->
             <rect x="30" y="270" width="360" height="110" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="2" />
             <text x="210" y="300" font-family="sans-serif" font-size="16" font-weight="700" fill="#7c2d12"
-              text-anchor="middle">Step 2: StandardScaler (Z-Score)</text>
-            <text x="210" y="322" font-family="sans-serif" font-size="14" fill="#ea580c" text-anchor="middle">Mean = 0, Variance = 1 Standardization</text>
+              text-anchor="middle">2. Adım: StandardScaler (Z-Skor)</text>
+            <text x="210" y="322" font-family="sans-serif" font-size="14" fill="#ea580c" text-anchor="middle">Ortalama =
+              0, Varyans = 1 Standardizasyonu</text>
             <text x="210" y="344" font-family="sans-serif" font-size="13" fill="#9a3412"
-              text-anchor="middle">Balances influence across scale disparities</text>
+              text-anchor="middle">Özniteliklerin ağırlıkları eşitlenir</text>
 
+            <!-- Arrow 3 -->
             <line x1="210" y1="390" x2="210" y2="430" stroke="#ea580c" stroke-width="2" />
             <polygon points="210,435 205,425 215,425" fill="#ea580c" />
 
+            <!-- Flow Step 4: Distance & Outliers -->
             <rect x="30" y="440" width="360" height="70" rx="10" fill="#fdf2f8" stroke="#db2777" stroke-width="2" />
             <text x="210" y="468" font-family="sans-serif" font-size="16" font-weight="700" fill="#831843"
-              text-anchor="middle">Step 3: Distance Decision</text>
+              text-anchor="middle">3. Adım: Canlı Euclidean Mesafe Kararı</text>
             <text x="210" y="492" font-family="sans-serif" font-size="14" font-weight="700" fill="#db2777"
-              text-anchor="middle">If Distance > 3.0 -> Anomaly Outlier Alert!</text>
+              text-anchor="middle">Mesafe > 3.0 ise Outlier Anomali Alarmı!</text>
           </svg>
         </div>
       </div>
     </section>
 
 
-    <!-- SLIDE 15: K-MEANS CANLI EĞİTİM YAPISI -->
+    <!-- SLIDE 14: K-MEANS CANLI EĞİTİM YAPISI -->
     <section>
-      <h3>14) Adaptive Intelligence: Asynchronous In-Memory Retraining</h3>
+      <h3>14) Siber Zeka: Asenkron Canlı Model Eğitimi</h3>
       <div class="tech-grid">
         <div class="tech-desc">
-          <p>Network baselines evolve over time (Concept Drift). To prevent the SIEM from becoming blind to new behaviors, the pipeline executes asynchronous, continuous model retraining in memory:</p>
+          <p>Akan canlı trafikte siber davranışlar zamanla değişir (Concept Drift). Bu zorluğu yenmek için
+            kurguladığımız asenkron eğitim mimarisi:</p>
           <ul class="presentation-list">
-            <li><strong>Bootstrap Buffering (Cold Start):</strong> Holds initial streaming logs (<code>COLD_START_ROWS = 100</code>) to compute baseline starting clusters.</li>
-            <li><strong>Periodic Model Re-training:</strong> Queries the cumulative parquet warehouse every 50 batches (<code>RETRAIN_EVERY_BATCHES = 50</code>), recalculating centroid coordinates on modern data.</li>
-            <li><strong>Adaptive Shielding:</strong> centroids adjust dynamically to changing traffic profiles, keeping classification boundaries highly accurate without admin intervention.</li>
+            <li><strong>Soğuk Başlangıç (Cold Start):</strong> Modelin ilk eğitilebilmesi için gelen canlı loglar
+              başlangıçta disk tamponunda biriktirilir (<code>COLD_START_ROWS = 100</code> satır limitidir).</li>
+            <li><strong>Periyodik Yeniden Eğitim (Periodic Retraining):</strong> Sistem akan her 50 batch'te bir
+              (<code>RETRAIN_EVERY_BATCHES = 50</code>) en güncel log verilerini alarak K-Means modelini asenkron olarak
+              yeniden eğitir.</li>
+            <li><strong>Kritik Avantaj:</strong> Bu sayede model değişen ağ trafiği paternlerine kendini adapte eder,
+              eskiyen küme merkezleri canlı olarak güncellenir ve alarm doğruluğu stabil tutulur.</li>
           </ul>
         </div>
         <div
           style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: white; border: 1px solid var(--border); border-radius: 12px; padding: 15px 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); min-height: 0;">
           <h4
             style="margin: 0 0 10px 0; color: var(--accent); font-size: 1.15rem; font-weight: bold; text-align: center;">
-            Continuous Retraining Architecture</h4>
+            Asenkron Canlı Eğitim Akışı</h4>
           <svg viewBox="0 0 420 440" class="diagram-svg" style="width: 100%; height: 100%; max-height: 380px;"
             xmlns="http://www.w3.org/2000/svg">
+            <!-- Flow Step 1: Ingestion -->
             <rect x="30" y="10" width="360" height="60" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" />
             <text x="210" y="34" font-family="sans-serif" font-size="14" font-weight="bold" fill="#0f172a"
-              text-anchor="middle">Live Log Streams (Micro-Batch)</text>
-            <text x="210" y="52" font-family="sans-serif" font-size="12" fill="#64748b" text-anchor="middle">Spark Structured Streaming</text>
+              text-anchor="middle">Canlı Log Akışı (Micro-Batch)</text>
+            <text x="210" y="52" font-family="sans-serif" font-size="12" fill="#64748b" text-anchor="middle">Spark
+              Structured Streaming</text>
 
             <line x1="210" y1="72" x2="210" y2="105" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
             <polygon points="210,110 205,100 215,100" fill="#94a3b8" />
 
+            <!-- Flow Step 2: Cold Start -->
             <rect x="30" y="120" width="360" height="72" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
             <text x="210" y="146" font-family="sans-serif" font-size="14" font-weight="bold" fill="#1e3a8a"
-              text-anchor="middle">1. Initial Bootstrapping (Cold Start)</text>
-            <text x="210" y="168" font-family="sans-serif" font-size="12" fill="#2563eb" text-anchor="middle">Row count >= 100?</text>
-            <text x="210" y="186" font-family="sans-serif" font-size="11" fill="#1d4ed8" text-anchor="middle">If Yes -> Train Baseline K-Means Model</text>
+              text-anchor="middle">1. Soğuk Başlangıç (Cold Start)</text>
+            <text x="210" y="168" font-family="sans-serif" font-size="12" fill="#2563eb" text-anchor="middle">Kayıt
+              sayısı >= 100 mü?</text>
+            <text x="210" y="186" font-family="sans-serif" font-size="11" fill="#1d4ed8" text-anchor="middle">Evet ise
+              K-Means İlk Modeli Eğitilir</text>
 
             <line x1="210" y1="194" x2="210" y2="230" stroke="#3b82f6" stroke-width="2" />
             <polygon points="210,235 205,225 215,225" fill="#3b82f6" />
 
+            <!-- Flow Step 3: Retraining -->
             <rect x="30" y="245" width="360" height="72" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="2" />
             <text x="210" y="270" font-family="sans-serif" font-size="14" font-weight="bold" fill="#7c2d12"
-              text-anchor="middle">2. Continuous Asynchronous Retraining</text>
-            <text x="210" y="292" font-family="sans-serif" font-size="12" fill="#ea580c" text-anchor="middle">Batch Count % 50 == 0?</text>
-            <text x="210" y="310" font-family="sans-serif" font-size="11" fill="#9a3412" text-anchor="middle">If Yes -> Recalculate Centroid Weights</text>
+              text-anchor="middle">2. Periyodik Model Güncelleme</text>
+            <text x="210" y="292" font-family="sans-serif" font-size="12" fill="#ea580c" text-anchor="middle">Batch
+              Sayısı % 50 == 0 mı?</text>
+            <text x="210" y="310" font-family="sans-serif" font-size="11" fill="#9a3412" text-anchor="middle">Evet ise
+              K-Means Ağırlıkları Tazelenir</text>
 
             <line x1="210" y1="320" x2="210" y2="352" stroke="#ea580c" stroke-width="2" />
             <polygon points="210,357 205,347 215,347" fill="#ea580c" />
 
+            <!-- Output -->
             <rect x="30" y="365" width="360" height="56" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="2" />
             <text x="210" y="398" font-family="sans-serif" font-size="13" font-weight="bold" fill="#14532d"
-              text-anchor="middle">Real-Time Concept Drift Shield Active</text>
+              text-anchor="middle">Canlı Concept Drift Önleme Aktif</text>
           </svg>
         </div>
       </div>
     </section>
 
 
-    <!-- SLIDE 16: ANOMALY SCATTER (Slide 15 in DOM) -->
+    <!-- SLIDE 17: ANOMALY SCATTER -->
     <section>
-      <h3>15) Cyber Intelligence: Outlier Clustering (2D Projection)</h3>
+      <h3>15) Siber Zeka: Outlier Kümeleme (2D İzdüşüm)</h3>
       <div class="tech-grid">
         <div class="tech-desc">
-          <p>A 2D mathematical projection demonstrating how our trained K-Means model isolates malicious outliers from baseline traffic patterns:</p>
+          <p>Eğitilen K-Means modelinin canlı trafikteki normal akışlar ile siber anomali (outlier) akışları nasıl
+            kümelediğinin 2D izdüşümü:</p>
           <ul class="presentation-list">
-            <li><strong>Green Clusters (Baseline Traffic):</strong> Legitimate connection streams tightly bunched around their nearest centroid.</li>
-            <li><strong>Red Outliers (Anomalous Spikes):</strong> Highly anomalous sessions falling past the standard deviation limits, representing rapid port scans or heavy exfiltration channels.</li>
-            <li><strong>Parallel Inferences:</strong> Centroid distance calculations execute natively across Spark executor cores, maintaining sub-second ingestion rates.</li>
+            <li><strong>Yeşil Noktalar (Normal Trafik):</strong> Merkez etrafında yoğunlaşmış normal süreli ve düşük
+              boyutlu rutin ağ bağlantıları.</li>
+            <li><strong>Kırmızı Noktalar (Outlier Anomali):</strong> Eşik değerinin (3.0) dışına savrulmuş, son derece
+              anormal duration veya veri baytı içeren siber sızma/veri kaçırma faaliyetleri.</li>
+            <li><strong>UDF Anlık Mesafe Sorgusu:</strong> Canlı sorgularda bu mesafeler Spark cluster worker düğümleri
+              tarafından paralel koşar.</li>
           </ul>
         </div>
-        <div class="chart-container">
-          <canvas id="scatterChart"></canvas>
+        <div style="text-align: center;">
+          <img src="outlier.png" alt="outlier" />
         </div>
       </div>
     </section>
 
 
-    <!-- SLIDE 17: ACCURACY / WSSSE (Slide 16 in DOM) -->
+    <!-- SLIDE 15: ANOMALY DECISION & ACCURACY -->
     <section>
-      <h3>16) Model Validation: WSSSE Convergence & Metrics</h3>
-      <div class="tech-grid">
+      <h3>16) Model Doğrulaması: WSSSE ve Anomali Kararları</h3>
+      <div class="tech-grid" style="grid-template-columns: 1fr;">
         <div class="tech-desc">
-          <p>Tracking training metrics and within-cluster variance to guarantee model stability under massive event volumes:</p>
+          <p>Modelin doğruluğunu jüri önünde ispatlayan anomali kararları ve başarım metrikleri:</p>
           <ul class="presentation-list">
-            <li><strong>Mathematical Anomaly Score:</strong> The direct distance ($d$) of a vector from its nearest centroid matches its continuous Anomaly Score.</li>
-            <li><strong>Outlier Threshold Limit:</strong> Events with scores exceeding a standard deviation boundary ($d \ge 3.0$) are isolated as outliers, triggering HDFS alert logs.</li>
-            <li><strong>WSSSE Logging:</strong> Stores Within-Cluster Sum of Squared Errors (WSSSE) directly inside the <code>siem.model_metrics</code> catalog to monitor model convergence.</li>
+            <li><strong>Anomali Skoru Eşitliği:</strong> Her ağ oturumunun atanmış küme merkezine olan mesafesi ($d$)
+              doğrudan <strong>Anomali Skoru</strong>dur.</li>
+            <li><strong>Hassas Eşik Değeri (Threshold = 3.0):</strong> Bu mesafe $3.0$ standard sapma limitini aşarsa,
+              akış anında siber anomali (outlier) olarak etiketlenir ve alarmlar veri gölüne yazılır.</li>
+            <li><strong>WSSSE Metrik Takibi:</strong> Modelin küme içi hata kareleri toplamı (WSSSE) her eğitim adımında
+              <code>siem.model_metrics</code> tablosuna yazılır ve modelin kararlılığı izlenir.
+            </li>
           </ul>
-        </div>
-        <div class="chart-container">
-          <canvas id="wssseChart"></canvas>
         </div>
       </div>
     </section>
 
 
-    <!-- SLIDE 18: SIEM RULES (Slide 17 in DOM) -->
+    <!-- SLIDE 16: SIEM RULES & ENRICHMENT (DETAYLI) -->
     <section>
-      <h3>17) Hybrid In-Memory Model: Deterministic SIEM Rules</h3>
-      <div class="tech-grid">
+      <h3>17) Deterministik Yaklaşım: SIEM Kuralları</h3>
+      <div class="tech-grid" style="grid-template-columns: 1fr;">
         <div class="tech-desc">
-          <p>Predefined threat rules process active event streams in parallel to trap signature-based scans and volumetric indicators in seconds:</p>
+          <p>Deterministik kurallar, imza tabanlı saldırı paternlerini ve bilinen siber tehditleri saniyeler içinde
+            yakalamak üzere tasarlanmıştır:</p>
           <ul class="presentation-list">
-            <li><strong>SIEM-001 (Port Scans):</strong> Identifies single client hosts querying more than 50 distinct destination port channels within a 10-second window.</li>
-            <li><strong>SIEM-002 (Path Traversal):</strong> Leverages regex to spot directory traversal queries (<code>../</code>, <code>etc/passwd</code>, <code>win.ini</code>) inside HTTP strings.</li>
-            <li><strong>SIEM-003 (Volumetric Floods):</strong> Triggers alert triggers if a single source IP mounts more than 100 connections in a single micro-batch.</li>
+            <li><strong>SIEM-001 (Port Tarama):</strong> Tek bir kaynak IP'nin, 10 saniyelik mikro-batch içinde 50'den
+              fazla benzersiz hedef portuna istek göndermesi.</li>
+            <li><strong>SIEM-002 (Dizin Geçiş Girişimi - Path Traversal):</strong> HTTP istek yolunda sızma amacıyla
+              gönderilen <code>../</code>, <code>etc/passwd</code>, <code>win.ini</code> ve <code>/bin/sh</code> gibi
+              dizin geçiş paternlerinin yakalanması.</li>
+            <li><strong>SIEM-003 (Sıra Dışı Yüksek Hacim):</strong> Tek bir kaynak IP'nin 10 saniyelik batch içinde
+              normal dışı (100+) sayıda HTTP bağlantısı kurması.</li>
           </ul>
-        </div>
-        <div class="chart-container">
-          <canvas id="alertsChart"></canvas>
         </div>
       </div>
     </section>
 
 
-    <!-- SLIDE 19: CONCLUSION & THANK YOU -->
+
+    <!-- SLIDE 24: VISION -->
     <section class="hero">
-      <div class="title">Thank You</div>
-      <div class="subtitle">Apache Big Data SIEM | Distributed Ingestion & Anomaly Detection System</div>
+      <div class="title">Teşekkürler</div>
+      <div class="subtitle">Apache-BigData-SIEM | Büyük Veri ile SIEM ve Anomali Tespit Sistemi</div>
     </section>
 
   </div>
 
   <script>
-    // Clean code block indentation
+    // ───────────────── KOD BLOKLARI BOŞLUK TEMİZLEME YARDIMCISI ─────────────────
     document.querySelectorAll('.code-block').forEach(block => {
       const lines = block.textContent.split('\n');
       while (lines.length && !lines[0].trim()) lines.shift();
@@ -1137,7 +1302,7 @@
     const slides = document.getElementById('slides');
     const progress = document.getElementById('progress');
 
-    // Slide navigation helpers
+    // Slayt Navigasyon Yardımcıları
     function getSlideIndex() {
       return Math.round(slides.scrollTop / window.innerHeight);
     }
@@ -1152,57 +1317,62 @@
       setTimeout(updateActiveNotes, 250);
     }
 
-    // Autoplay logic
+    // Otomatik Oynatma Mantığı
     let autoplayInterval = null;
     function toggleAutoplay() {
       const btn = document.getElementById('playBtn');
       if (autoplayInterval) {
         clearInterval(autoplayInterval);
         autoplayInterval = null;
-        btn.innerText = "▶ Autoplay";
+        btn.innerText = "▶ Otomatik Oynat";
         btn.classList.remove('active-indicator');
       } else {
         autoplayInterval = setInterval(() => {
           const currentIndex = getSlideIndex();
-          if (currentIndex >= 18) {
-            slides.scrollTop = 0; // Return to first slide
+          if (currentIndex >= 22) {
+            slides.scrollTop = 0; // Başa dön
           } else {
             nextSlide();
           }
         }, 5000);
-        btn.innerText = "⏸ Pause";
+        btn.innerText = "⏸ Duraklat";
         btn.classList.add('active-indicator');
       }
     }
 
     slides.addEventListener('scroll', () => {
       const slideIndex = getSlideIndex() + 1;
-      progress.innerText = `Slide ${slideIndex} / 19`;
+      progress.innerText = `Slayt ${slideIndex} / 19`;
       updateActiveNotes();
     });
 
-    // ───────────────── SPEAKER NOTES ARRAY (19 ELEMENTS) ─────────────────
+    // ───────────────── KONUŞMACI NOTLARI VERİSİ VE KONTROLÜ ─────────────────
     const speakerNotes = [
-      "Honorable members of the jury. Today, I present the 'Cybersecurity Anomaly Detection System' developed as part of my master's thesis, which unifies big data architectures, threat intelligence, and machine learning. This Apache Lakehouse ecosystem is not just a logging tool, but an intelligent, adaptive network defense shield.",
-      "As you know, traditional SIEMs succumb to high licensing costs and hardware performance bottlenecks under volumetric, high-EPS network events. In this project, we built a horizontally scalable, open-source Big Data architecture utilizing Hadoop and Spark, delivering a cost-effective, high-availability, zero-data-loss security lakehouse.",
-      "This diagram presents the overall pipeline flow. Raw telemetry is streamed from the custom multi-threaded Kafka Producer to our message brokers. Apache Spark consumes the streams, standardizing features and evaluating K-Means anomaly scores. Anomaly alerts are cataloged into HDFS Hive tables, feeding our live SOC dashboards in Apache Superset.",
-      "To validate our system under real-world conditions, we bypass clean laboratory simulations. Instead, we ingest raw enterprise logs from SecRepo.com, including conn.log, http.log, and dns.log files. This guarantees our K-Means model is stress-tested against organic, chaotic scanning and exfiltration traffic.",
-      "Our ingestion gateway is a custom Kafka Producer container designed to mount local raw telemetry. It loops over network records at high speeds, streaming them into the broker network. This allows static historical logs to act like active, high-throughput network interfaces under stressful network conditions.",
-      "The message buffering tier is powered by Apache Kafka operating in KRaft metadata mode, completely bypassing ZooKeeper. During high-EPS events, Kafka absorbs spike loads in sequential disk queues, preventing the Spark streaming workers from saturating and guaranteeing zero-data-loss buffering.",
-      "Apache Spark is the core analytical processing engine. Operating in-memory, Spark structured streaming delivers sub-second response times. Using Project Tungsten off-heap structures and Catalyst query optimizers, Spark executes continuous ETL and parses dotted-key JSON schemas without garbage collection lag.",
-      "To guarantee long-term audit compliance and tamper-proof storage, our structured tables are persisted in the Hadoop Distributed File System (HDFS). Each 128 MB block is duplicated across decentralized DataNodes using 2x replication, making our security telemetry safe against sudden hardware failures.",
-      "To map raw files to standard SQL interfaces, we deploy Apache Hive using Snappy-compressed columnar Parquet formats. This enables column pruning and predicate pushdowns: search queries requesting specific fields seek directly to target byte offsets, skipping unrequested columns and cutting I/O costs by 90%.",
-      "For interactive threat hunting, SOC analysts utilize Apache Zeppelin notebooks connected directly to the Spark core. Analysts run ad-hoc ANSI SQL queries or PySpark scripts across Hive tables, leveraging interactive query binding widgets to isolate suspicious hosts instantly.",
-      "Apache Superset serves as our Security Operations Center visual control console. Connected to our Spark Thrift Server, Superset presents live dashboard widgets detailing alert statistics, K-Means outlier counts, and geographic threat maps plotting the physical source of attacks in real time.",
-      "To support sub-second query speeds, we integrate PostgreSQL to manage ACID Metastore schemas and persist Superset credentials, alongside Redis to serve as a distributed query cache. Redis intercepts repeated dashboard requests, serving them in memory and keeping the underlying data lake from saturating.",
-      "A primary innovation in our project is Contextual Feature Engineering. Because K-Means utilizes Euclidean distance calculations, feeding raw IP strings directly is a mathematical violation that triggers the curse of dimensionality. We solve this by compiling PySpark UDFs that parse IPs into contextual flags: evaluating external networks and identifying server roles to separate standard backups from exfiltration anomalies.",
-      "Our ML pipeline relies on K-Means clustering. To prevent volumetric byte values from overshadowing brief connection durations, we scale features using Z-score standardisation. Spark maps events across 8 baseline centroids, computing the active distance of new events to detect structural outliers.",
-      "To combat concept drift where standard network profiles shift over time, our model retrains itself asynchronously. It bootstraps from an initial warm-up buffer (Cold Start) and continuously queries the cumulative parquet tables every 50 micro-batches to recalculate centroid weights and preserve accuracy.",
-      "This 2D mathematical scatter plot illustrates our K-Means clustering results. Normal connection profiles gather tightly around baseline centroids in green. Outlying sessions pushed past our 3.0 standard deviation threshold in red represent anomalies like volumetric scans or active exfiltration channels.",
-      "We record model metrics like the Within-Cluster Sum of Squared Errors (WSSSE) directly inside the Hive catalog to verify convergence. Setting standard outlier scoring rules enables consistent classifications, preserving alert metrics in the model history.",
-      "To build a robust defense, our platform couples machine learning with parallel deterministic SIEM rules in Spark memory. These high-speed rules trap signature-based scans, traversal sequences like etc-passwd, and volumetric floods, writing immediate notifications to our alerts catalog.",
-      "Thank you, honorable members of the jury, for your time. This Apache Lakehouse SIEM platform unifies distributed ingestion, high-speed memory parsing, contextual machine learning, and automatic model retraining into a highly resilient defense shield. I would be pleased to answer your questions."
+      "Değerli hocalarım. Bugün sizlere yüksek lisans projem kapsamında geliştirdiğim; büyük veri teknolojilerini, siber tehdit istihbaratını ve makine öğrenmesini tek bir çatı altında birleştiren 'Siber Güvenlik Anomali Tespit Sistemi'ni sunacağım. Kurduğumuz bu Apache Lakehouse ekosistemi, sıradan bir loglama aracından öte, ağı kendi kendine öğrenen zeki bir kalkan niteliğindedir.",
+      "Saygıdeğer jüri üyeleri, bildiğiniz gibi geleneksel SIEM'ler saniyede milyonlarca ağ olayının (EPS) aktığı modern altyapılarda lisans maliyetleri ve donanım darboğazları nedeniyle sınıfta kalmaktadır. Biz bu projede yatayda sonsuz ölçeklenebilen açık kaynaklı Big Data mimarisi (Hadoop/Spark) kurarak, maliyet-etkin, yüksek erişilebilirliği olan ve sıfır veri kaybı garantisi sunan kalıcı bir çözüm inşa ettik.",
+      "Mimarimizin genel kuşbakışı akışını bu diyagramda görebilirsiniz. Veri statik bir pcap dosyasından değil, dinamik bir Kafka-Producer aracılığıyla gerçek zamanlı olarak Kafka Broker'a pompalanmaktadır. Ardından Apache Spark bu veriyi alıp K-Means makine öğrenmesi modelinden geçirir, tespit ettiği anormallikleri Hadoop HDFS üzerinde Hive tablolarına kalıcı olarak yazar ve Superset üzerinden canlı SOC (Security Operations Center) ekranlarına yansıtır.",
+      "Sistemimizi akademik olarak doğrulamak için izole ve steril laboratuvar verileri yerine SecRepo.com'dan alınan gerçek dünya siber güvenlik veri setlerini (Zeek ve Snort loglarını) kullandık. Amacımız, ağdaki zararlı faaliyetleri, brute-force denemelerini ve paket anormalliklerini, teoride değil tam olarak gerçek yaşam kaosunun içerisinde doğru tespit edebildiğimizi ispatlamaktı.",
+      "Veri giriş kapımızda karmaşık yapılar yerine tek bir sağlam omurga olan Kafka Producer servisimiz bulunuyor. Bu servis, Zeek ağ günlüklerini (conn.log) bir volume üzerinden okuyarak parçalara ayırır ve canlı bir ağ fırtınası (network flood) oluşturacak şekilde Kafka'ya iletir. Bu tasarım, veri akışının %100 bütünlüğünü garanti ederken sistemin stres testi koşullarında çalışmasını sağlar.",
+      "Sistemimizin sinir ağını oluşturan Apache Kafka, klasik Zookeeper bağımlılığını tamamen ortadan kaldıran modern KRaft mimarisiyle çalışmaktadır. Olası bir siber saldırıda yaşanacak olan log patlamalarını (Log Floods) burada absorbe ediyoruz. Yani sistemimiz ani yüklenmelerde çökmez, veriyi diske tamponlar ve Spark analiz motoruna güvenli bir hızda aktarır.",
+      "Gelelim sistemin matematiksel ve analitik beynine: Apache Spark. Geleneksel disk tabanlı (MapReduce) işleme modellerinin aksine Spark, belleği (In-Memory) doğrudan kullanarak mikrosaniyeler mertebesinde yanıt süresi sunar. Structured Streaming yeteneği sayesinde Kafka'dan okunan ham loglar anında ETL süreçlerine sokulur ve ML pipeline'larına yönlendirilir.",
+      "Değerli hocalarım, hiçbir verinin kaybolmaması bizim için kritik bir önceliktir. Petabaytlarca hacme ulaşabilen ağ günlükleri ve anomali geçmişi, HDFS (Hadoop Distributed File System) üzerinde parçalanarak 128 MB'lık bloklar halinde DataNode'larda replike (yedekli) şekilde depolanır. Sunuculardan birkaçı fiziksel olarak yok olsa dahi ağ geçmişimiz güvendedir.",
+      "Elbette HDFS üzerinde duran o ham dosyaları okumak oldukça zordur. Bu noktada veri gölümüze akıl katan Apache Hive devreye giriyor. Veriyi Apache Parquet (kolonsal) formatında işleyerek ve tarih bazlı (ingest_date) bölümlendirerek (partitioning) kaydediyoruz. Bu sayede, milyarlarca log satırı içinde SQL ile bir IP adresi aranırken sistem tüm diski okumak yerine sadece ilgili tarih bloğunu tarar, IO maliyetini %90 düşürür.",
+      "Bir SOC (Siber Operasyon Merkezi) analistinin en çok ihtiyaç duyduğu şey interaktif araştırma ortamıdır. Eklediğimiz Zeppelin entegrasyonu sayesinde siber tehdit avcıları, veriler Hive ambarına düşer düşmez canlı PySpark DataFrame komutları veya doğrudan ANSI SQL komutları yazarak karmaşık tehditleri, pivot tabloları ve trafik frekanslarını anında keşfedebilmektedir.",
+      "Komuta kontrol merkezimizin vitrini Apache Superset'tir. Hive Server2'ye JDBC üzerinden doğrudan ve gerçek zamanlı bağlanan bu katman sayesinde, Spark'ın ML motoru tarafından etiketlenen (is_anomaly) tehdit skorları karar vericilerin önüne Dashboard olarak akar. Saniyeler içinde ağın genel sağlık durumunu anlık haritalar ve çizelgelerle gözlemleyebiliriz.",
+      "Superset'in arka planındaki performans darboğazlarını aşmak için PostgreSQL ve Redis kullandık. Hive'ın hangi veriyi nerede sakladığı (Metastore şemaları) PostgreSQL'de kalıcı olarak korunurken, Superset ekranına eşzamanlı bakan yüzlerce analistin çalıştırdığı aynı SQL grafik sorguları Redis tarafından önbelleğe (Cache) alınır, böylece arka plandaki Big Data altyapısı yorulmaz.",
+      "Geldik projeyi akademik açıdan en benzersiz kılan noktaya: Bağlamsal Öznitelik Mühendisliği (Contextual Feature Engineering). Değerli jüri üyeleri, makine öğrenmesi modelleri sayısal hesap yapar; bu nedenle K-Means algoritmasına bir IP adresini (Örn: 192.168.1.1) ham olarak vermek devasa bir matematiksel hatadır ve boyutluluk lanetine (Curse of Dimensionality) yol açar. Biz bunun yerine, PySpark içindeki Regex fonksiyonlarını kullanarak her gelen IP'nin İç Ağda mı (RFC1918) yoksa Dış Ağda mı (is_dst_external) olduğunu ve kurum içindeki yasal bir dosya sunucusu mu (is_src_server) olduğunu canlı olarak etiketledik. Böylece model, veriyi sadece boyutuna göre değil, siber güvenlik bağlamına (context) göre yargılar.",
+      "Modelimizin matematiksel altyapısı Euclidean (Öklid) uzaklığı üzerine kuruludur. Ancak büyük boyutlu indirme baytları, küçük boyutlu süreleri istatistiksel olarak ezmesin diye verileri StandardScaler (Z-Skor) ile normalize ettik (Varyans=1, Ortalama=0). Model, ağ kayıtlarını WSSSE fonksiyonunu kullanarak 8 farklı merkeze dağıtır ve o an gelen trafiğin merkeze uzaklığına bakarak bir anomali kararı üretir.",
+      "Siber güvenlikte 'Concept Drift' dediğimiz çok kritik bir kavram vardır. Yani ağın normal davranışı ve saldırganın taktikleri sürekli değişir. Sistemin zamanla körleşmesini engellemek için, modelimiz Spark Streaming içinde asenkron olarak yaşar. İlk 100 kayıtta öğrenmeye (Cold Start) başlar ve sonrasında periyodik olarak K-Means ağırlıklarını canlı olarak yeniden eğitir.",
+      "Bu ekranda gördüğünüz izdüşüm, modelimizin tehdidi nasıl kümelediğinin (clustering) haritasıdır. Merkezdeki (Mesafesi düşük olan) yeşil yoğunluklar günlük yasal şirket trafiğini temsil eder. Merkeze 3.0 Öklid mesafesinden daha uzakta kalarak ana kümeden kopan (Outlier) kırmızı noktalar ise, o an gerçekleşmekte olan anomaliyi (Zero-Day veya sızıntı) başarıyla yakaladığımızı gösterir.",
+      "Modelin zaman içindeki öğrenme başarısını WSSSE (Küme İçi Hata Kareler Toplamı) metrikleri ile Hive tablolarımıza canlı olarak kaydediyoruz. Statik eşikler yerine dinamik Z-skoru eşikleri ile False Positive (Yanlış Alarm) oranını minimize ediyor, analistlerin sadece gerçek tehditlere odaklanmasını sağlıyoruz.",
+      "Saygıdeğer jüri üyeleri, makine öğrenmesi anomali ararken spesifik bilinen saldırıları atlayabilir. Bu nedenle 'Hibrit bir SIEM' inşa ettik. Makine öğrenmesinin paralelinde, doğrudan Spark hafızasında akan loglara deterministik SIEM kuralları uyguluyoruz. Örneğin Regex ile bir Path Traversal denemesi görüldüğü an, anında 'CRITICAL' etiketli uyarı (Alert) tablosuna düşer.",
+      "Bütün bu anlattığım teorik ve analitik altyapının sistemsel organizasyonu ekrandaki gibidir. Tüm bu yapı 11 farklı Docker konteyneri ile yalıtılmış olarak çalışmaktadır. NameNode, DataNode, Spark-Master, Worker'lar, Hive Metastore ve Superset arayüzü sanal bir ağ üzerinden birleşerek, production-ready (canlı ortama hazır) kurumsal bir şirket mimarisini modellemektedir.",
+      "Değerli hocalarım, kod altyapımızda özellikle DataFrame API kullanılmıştır. RDD yerine DataFrame kullanılmasının sebebi, Spark Catalyst Optimizer'ın kodları arka planda optimize etmesi ve Tungsten bellek yönetimiyle Java Garbage Collection (Çöp Toplama) sorunlarını ezip geçmesidir.",
+      "Mimarimizin son kullanıcı vitrini olan SOC Paneline bakıyoruz. Hive Server2 üzerinden canlı SQL (JDBC) çalıştıran bu ekranlar; alarmları, K-Means'in karar kıldığı anomali uzaklık skorlarını ve kural motorumuzun ürettiği istihbarat tag'lerini saniyeler içinde yetkili güvenlik personeline dashboardlar halinde raporlamaktadır.",
+      "Projemizi sadece slaytlar ve arayüzler üzerinden değil, doğrudan sunucu çekirdeği (CLI) üzerinden de doğrulayabiliyoruz. 'hdfs dfsadmin' ile Hadoop veri bütünlüğünü, 'kafka-console-consumer' ile ham log akışını ve 'beeline' üzerinden Hive SQL bağlatısıyla model sonuçlarını sizlere anlık olarak canlı konsol üzerinde ispatlayabilecek altyapıya sahibiz.",
+      "Değerli jüri üyeleri, değerli hocalarım. Apache Lakehouse mimarisi üzerinde inşa ettiğim bu Büyük Veri SIEM projesi; hızı, ölçeklenebilirliği, bağlamsal zeka mühendisliğini ve asenkron model eğitimini aynı anda barındıran kompleks bir savunma kalkanıdır. Dinlediğiniz ve vaktinizi ayırdığınız için çok teşekkür ederim, değerli sorularınızı yanıtlamaktan memnuniyet duyarım."
     ];
+
 
     function toggleSpeakerNotes() {
       const drawer = document.getElementById('notesDrawer');
@@ -1214,18 +1384,19 @@
       const activeIndex = getSlideIndex();
       const content = document.getElementById('notesContent');
       if (speakerNotes[activeIndex]) {
-        content.innerHTML = `<p><strong>[Slide ${activeIndex + 1} Note]:</strong> ${speakerNotes[activeIndex]}</p>`;
+        content.innerHTML = `<p><strong>[Slayt ${activeIndex + 1} Notu]:</strong> ${speakerNotes[activeIndex]}</p>`;
       } else {
-        content.innerHTML = `<p>No speaker notes available for this slide.</p>`;
+        content.innerHTML = `<p>Bu slayt için konuşmacı notu bulunmamaktadır.</p>`;
       }
     }
 
+    // İlk açılışta notları güncelle
     window.addEventListener('load', () => {
       updateActiveNotes();
     });
 
 
-    // ───────────────── GRAPH INITIALIZATIONS ─────────────────
+    // ───────────────── GRAFİK İNİSİYALİZASYONLARI ─────────────────
     const chartFontSize = Math.max(13, Math.min(22, Math.round(window.innerWidth / 70)));
     const chartTitleSize = chartFontSize + 2;
     Chart.defaults.font.family = '"Space Grotesk", sans-serif';
@@ -1234,14 +1405,14 @@
     Chart.defaults.plugins.tooltip.enabled = true;
     Chart.defaults.interaction = { mode: 'nearest', intersect: false };
 
-    // 1. K-Means 2D Scatter Chart
+    // 1. K-Means 2D Scatter Grafiği
     const ctxScatter = document.getElementById('scatterChart').getContext('2d');
     const scatterChart = new Chart(ctxScatter, {
       type: 'scatter',
       data: {
         datasets: [
           {
-            label: 'Normal Baseline Clusters',
+            label: 'Normal Trafik Kümeleri',
             data: [
               { x: 1.2, y: 2.1 }, { x: 1.5, y: 1.8 }, { x: 1.0, y: 2.5 },
               { x: 2.2, y: 3.1 }, { x: 2.5, y: 2.8 }, { x: 2.0, y: 3.5 },
@@ -1250,7 +1421,7 @@
             backgroundColor: '#16a34a'
           },
           {
-            label: 'Outlier Anomalies (Score > 3.0)',
+            label: 'Normal Dışı Outlier Anomali (Skor > 3.0)',
             data: [
               { x: 5.1, y: 8.4 }, { x: 4.8, y: 9.3 }, { x: 6.2, y: 11.4 }
             ],
@@ -1269,12 +1440,12 @@
         },
         scales: {
           x: {
-            title: { display: true, text: 'Log-Scaled Duration', color: '#475569', font: { size: chartTitleSize, weight: '600' } },
+            title: { display: true, text: 'Log-Ölçekli Süre (Duration)', color: '#475569', font: { size: chartTitleSize, weight: '600' } },
             grid: { color: '#e2e8f0' },
             ticks: { color: '#475569', font: { size: chartFontSize } }
           },
           y: {
-            title: { display: true, text: 'Log-Scaled Byte Size', color: '#475569', font: { size: chartTitleSize, weight: '600' } },
+            title: { display: true, text: 'Log-Ölçekli Bayt Boyutu (Bytes)', color: '#475569', font: { size: chartTitleSize, weight: '600' } },
             grid: { color: '#e2e8f0' },
             ticks: { color: '#475569', font: { size: chartFontSize } }
           }
@@ -1282,12 +1453,12 @@
       }
     });
 
-    // 2. SIEM Custom Rules Distribution (Doughnut)
+    // 2. Kural Tabanlı Güvenlik Alarmları Dağılımı (Doughnut)
     const ctxAlerts = document.getElementById('alertsChart').getContext('2d');
     const alertsChart = new Chart(ctxAlerts, {
       type: 'doughnut',
       data: {
-        labels: ['Path Traversal (SIEM-002)', 'Volumetric Scrapers (SIEM-003)', 'Port Scanning (SIEM-001)', '5xx Server Spike (SIEM-007)'],
+        labels: ['Dizin Geçişi (SIEM-002)', 'Yüksek Bağlantı Hacmi (SIEM-003)', 'Port Tarama (SIEM-001)', '5xx Hata Artışı (SIEM-007)'],
         datasets: [{
           data: [21, 4, 8, 1],
           backgroundColor: ['#dc2626', '#ea580c', '#eab308', '#2563eb'],
@@ -1314,7 +1485,7 @@
       data: {
         labels: ['Batch 0 (Init)', 'Batch 50', 'Batch 100', 'Batch 150', 'Batch 200', 'Batch 250'],
         datasets: [{
-          label: 'Within-Cluster Sum of Squared Errors (WSSSE)',
+          label: 'Küme İçi Hata Kareleri Toplamı (WSSSE)',
           data: [1420.5, 950.2, 580.4, 320.1, 210.6, 185.3],
           borderColor: '#2563eb',
           backgroundColor: 'rgba(37, 99, 235, 0.08)',
@@ -1333,12 +1504,12 @@
         },
         scales: {
           x: {
-            title: { display: true, text: 'Model Training Iterations', color: '#475569', font: { size: chartTitleSize, weight: '600' } },
+            title: { display: true, text: 'Model Eğitim Döngüsü', color: '#475569', font: { size: chartTitleSize, weight: '600' } },
             grid: { color: '#e2e8f0' },
             ticks: { color: '#475569', font: { size: chartFontSize } }
           },
           y: {
-            title: { display: true, text: 'WSSSE Value', color: '#475569', font: { size: chartTitleSize, weight: '600' } },
+            title: { display: true, text: 'WSSSE Değeri', color: '#475569', font: { size: chartTitleSize, weight: '600' } },
             grid: { color: '#e2e8f0' },
             ticks: { color: '#475569', font: { size: chartFontSize } }
           }
