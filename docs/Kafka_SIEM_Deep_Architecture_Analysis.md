@@ -332,4 +332,4 @@ For high-volume SIEM log ingestion pipelines, Apache Kafka is not a simple messa
 
 ## 🔗 Navigation & Links
 *   ⬅️ **[Back to Root README](../README.md)**
-*   📂 **[Go to Technical Documentation Library](./)**
+*   📂 **[Go to Technical Documentation Library](README.md)**

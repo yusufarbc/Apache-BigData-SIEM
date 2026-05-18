@@ -97,4 +97,4 @@ ORDER BY ingest_date DESC;
 
 ## 🔗 Navigation & Links
 *   ⬅️ **[Back to Root README](../README.md)**
-*   📂 **[Go to Technical Documentation Library](./)**
+*   📂 **[Go to Technical Documentation Library](README.md)**

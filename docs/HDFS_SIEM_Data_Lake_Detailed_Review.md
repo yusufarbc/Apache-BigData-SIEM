@@ -241,4 +241,4 @@ While cloud storage offers elastic scaling, a 24/7 high-volume SIEM cluster that
 
 ## 🔗 Navigation & Links
 *   ⬅️ **[Back to Root README](../README.md)**
-*   📂 **[Go to Technical Documentation Library](./)**
+*   📂 **[Go to Technical Documentation Library](README.md)**
