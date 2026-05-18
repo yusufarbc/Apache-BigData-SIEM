@@ -14,6 +14,14 @@ Built entirely on a modern **Apache Lakehouse Architecture** to deliver real-tim
   <span style="background: #00a699; color: white; padding: 5px 12px; border-radius: 6px; font-size: 0.9rem; font-weight: bold;">Superset</span>
 </div>
 
+> [!TIP]
+> ### ⚡ Local Service Quick Access
+> Once the Docker stack is running, you can access the key interactive dashboards and development portals directly from your browser:
+> *   **📊 Security Command Center (Superset):** [http://localhost:8088](http://localhost:8088) *(SOC Anomaly Alerting & Dashboard)*
+> *   **📓 Threat Hunting & Research Lab (Zeppelin):** [http://localhost:9090](http://localhost:9090) *(PySpark Forensic Playbooks)*
+> *   **⚙️ Spark Cluster Dashboard (Master):** [http://localhost:8080](http://localhost:8080) *(Distributed Streaming Job Monitor)*
+> *   **💾 HDFS Data Lake Explorer (NameNode):** [http://localhost:9870](http://localhost:9870) *(Hadoop Distributed Storage Health)*
+
 ---
 
 ## 🏗️ Platform Architecture
@@ -129,7 +137,17 @@ Verify that all services are healthy and running:
 docker compose ps
 ```
 
-### 3. Simulating Cyber Attacks (Validation Suite)
+### 3. Ingesting the Real-World Dataset (Optional)
+To test the platform under massive real-world network and Linux server workloads (over 34.4 Million events / 5.5 GB decompressed logs), download our pre-consolidated `data.tar.gz` package:
+🔗 **[Download Pre-Consolidated Security Logs (750 MB)](https://www.mediafire.com/file/h1qu7pgwbslskal/data.tar.gz/file)**
+
+*How to Install:*
+1. Download the `data.tar.gz` file.
+2. Extract the archive contents directly into the **`data/`** directory at the root of the project.
+3. The `kafka-producer` container will instantly auto-detect these log files and begin streaming them to the Kafka broker at startup!
+*(Note: If you skip this, the Kafka producer automatically falls back to generating high-fidelity synthetic log streams so you can evaluate the complete stack immediately).*
+
+### 4. Simulating Cyber Attacks (Validation Suite)
 The platform includes an automated security injection script to test the NDR K-Means anomaly detection capability. Run any of the following command patterns inside the producer context to stream malicious traffic patterns:
 
 ```powershell
@@ -147,6 +165,31 @@ docker exec kafka-producer python attack_injector.py c2
 ```
 
 Navigate to **Apache Superset** ([http://localhost:8088](http://localhost:8088)) to watch incoming alarms, rising threat maps, and anomalous score distributions trigger in real-time.
+
+---
+
+## 📚 Technical Documentation & Reference Library
+
+For a detailed analysis of specific tiers, configurations, and forensic query libraries, refer to our comprehensive technical reference blueprints located under the **[`docs/`](docs)** directory:
+
+### ⚙️ Core Infrastructure Blueprints
+*   **[Distributed HDFS Data Lake Architecture](docs/HDFS_SIEM_Data_Lake_Detailed_Review.md)** — Deep-dive into Hadoop NameNode & DataNode clustering, high-availability parameters, and write-once-read-many (WORM) storage safety.
+*   **[Hive Data Lakehouse Schema-on-Read Design](docs/Hive_Data_Lake_Cybersecurity_Analysis.md)** — Relational mapping, PostgreSQL metastore architecture, partition keys, and optimized Parquet storage schemas.
+*   **[Kafka Ingestion Pipeline (KRaft Mode)](docs/Kafka_SIEM_Deep_Architecture_Analysis.md)** — High-throughput broker configurations, thread allocations, network protocols, and sub-millisecond topic partition topologies.
+*   **[Spark Structured Streaming NDR Engine](docs/Spark_SIEM_Pipeline_Detailed_Analysis.md)** — Real-time ETL stream transformations, dotted-key JSON parsing, and streaming online K-Means clustering mathematical modeling.
+
+### 🗄️ Metadata & Session Scaling
+*   **[Persistent PostgreSQL Metastore Core](docs/PostgreSQL_SIEM_Architecture_In_Depth.md)** — Standardizing metastore schemas, multi-user privilege control, and transactional stability for Hive and Superset metadata.
+*   **[Redis Caching Tier & Session Optimization](docs/Redis_SIEM_Architecture_And_Optimization.md)** — Highly concurrent dashboard caching, query performance tuning, and Apache Superset session security settings.
+
+### 📊 SOC Dashboards & Threat Hunting
+*   **[Superset SOC Visualization & Real-Time Alerts](docs/superset-guide.md)** — Interactive dashboard widget mappings, geo-threat coordinate allocations, and SQL Lab integration via Spark Thrift.
+*   **[Forensic Query & Threat Hunting Playbook](docs/EXAMPLE_QUERIES.md)** — Production-ready SQL/PySpark patterns for identifying active DDoS patterns, rapid port-scans, and data exfiltration beacons.
+
+### 🚀 Operations & Deployment Guides
+*   **[Unified Verification Guide](docs/verification-guide.md)** — Phase-by-phase health verification script lists, CLI data reports, and failure isolation commands for the 13 container stack.
+*   **[NDR Network Dataset & Hyperparameter Guide](docs/ndr-dataset-guide.md)** — Standard cybersecurity dataset references (SecRepo, UNSW-NB15), volume mounting, and K-Means online tuning parameter details.
+*   **[Capacity & Performance Report](docs/CAPACITY.md)** — Container hardware footprints (CPU, memory, disk sizes), theoretical limits, and horizontal scaling strategies.
 
 ---
 

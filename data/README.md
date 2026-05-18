@@ -5,6 +5,11 @@ This directory is designated for the unified and merged security log datasets th
 > [!IMPORTANT]
 > **GitHub Exclusion Notice:** The dataset files in this directory contain over **34.4 Million real-world security events** totaling over **5.5 GB** in raw size. Due to GitHub's file size limitations, these files are ignored via `.gitignore` and are not committed to the repository. This document serves as a complete reference guide for the dataset structure, statistics, and integration.
 
+> [!TIP]
+> **Decompressed Ingestion Data:** You can download the pre-consolidated, highly compressed dataset archive `data.tar.gz` (750 MB, extracts to 5.5 GB raw connection and system logs) directly from our cloud storage share:
+> 🔗 **[Download Pre-Consolidated Security Logs (750 MB)](https://www.mediafire.com/file/h1qu7pgwbslskal/data.tar.gz/file)**
+> *(Simply extract the archive contents directly inside this `data/` folder, and the system orchestrator will automatically pick them up at startup).*
+
 ---
 
 ## 🏗️ Dataset Architecture & Sources
